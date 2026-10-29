@@ -1,5 +1,13 @@
 # Deploying CloudNote AI to AWS
 
+**Current deployment:** https://d349qer3boe6fg.cloudfront.net, stack `cloudnote-ai` in us-east-1. It was redeployed with:
+
+    ALLOWED_EMAIL_DOMAINS="" BEDROCK_REGION=us-west-2 EMBED_MODEL_ID=none \
+    GROQ_API_KEY_FILE=~/.cloudnote/groq.key GEMINI_API_KEY_FILE=~/.cloudnote/gemini.key \
+    bash infra/deploy.sh us-east-1
+
+The key files are only needed when a key changes; otherwise the stack keeps the keys from the previous deploy.
+
 ## Easiest way: AWS CloudShell (no access keys needed)
 
 1. Sign in to the AWS console as an IAM user with AdministratorAccess (or the permissions listed below). Do not use the root user.
@@ -33,7 +41,9 @@ The script builds the site and backend, uploads them, creates or updates the sta
 
 Options (environment variables): `ALLOWED_EMAIL_DOMAINS` (for example `school.edu,example.com`) limits who can sign up; leave it empty for open sign-up.
 
-Other options: `NOTES_MODEL_ID` (default `amazon.nova-lite-v1:0`, or `none`), `EMBED_MODEL_ID` (default `amazon.titan-embed-text-v2:0`, or `none`), `MAX_VIDEOS` (default 30 per user), `MAX_MEDIA_MB` (default 500).
+Other options: `NOTES_MODEL_ID` (default `amazon.nova-lite-v1:0`, or `none`), `EMBED_MODEL_ID` (default `amazon.titan-embed-text-v2:0`, or `none`), `MAX_VIDEOS` (default 30 per user), `MAX_MEDIA_MB` (default 500), `BEDROCK_REGION` (send Bedrock calls to another region, for example `us-west-2`).
+
+Free AI fallbacks (optional): `GROQ_API_KEY_FILE` and `GEMINI_API_KEY_FILE` point to files that hold a Groq or Gemini API key. They are passed as NoEcho CloudFormation parameters and end up as Lambda environment variables, so anyone with console access to the account can read them. Models: `GROQ_MODEL` (default `openai/gpt-oss-120b`) and `GEMINI_MODEL` (default `gemini-3.8-flash`). The order is Bedrock, then Groq, then Gemini, then extractive notes. With these providers, transcript text leaves AWS.
 
 ## First checks after deploying
 1. Open the printed URL, create an account, and use **Try with sample videos** to confirm the app, API and database work without spending on transcription.
@@ -49,6 +59,12 @@ Amazon Transcribe is billed per minute of audio and is the main cost. Bedrock is
 ## Remove everything
     ./infra/destroy.sh us-east-1
 This deletes all videos, transcripts and notes. The small `cloudnote-artifacts-*` build bucket is kept; delete it from the console if you like.
+
+## Lessons from the first deploy (October 2026)
+- **New accounts on the AWS Free plan** cannot use Amazon Transcribe ("needs a subscription for the service"). Upgrading to the paid plan unlocked it and kept the remaining credits.
+- **Bedrock on a new account** can have a daily token quota of 0 for every model ("Too many tokens per day"). This quota is not adjustable in Service Quotas; wait for AWS to raise it or open a Support case (Service limit increase, Bedrock). Until then, use the Groq or Gemini fallback.
+- **Gemini free tier** offered only `gemini-3.8-flash` to a new key, and it was often overloaded. Groq was fast and reliable.
+- **Check the AI is really used:** the video header shows "AI notes" or "extractive notes". When notes fall back, the reason is stored with the notes, and model failures are logged in CloudWatch (`model failed, trying the next one`).
 
 ## Known limits
 - Passwords: Cognito sign-up is auto-confirmed (no email verification) to keep trials frictionless, and there is no password reset. For a public launch, enable email verification and add password recovery.

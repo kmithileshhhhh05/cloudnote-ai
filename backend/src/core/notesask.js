@@ -26,8 +26,9 @@ export function askPrompt(question, ps) {
 }
 
 export function parseAnswer(reply, ps) {
-  // models vary in citation style: [1, 3], 【1】, [1-2] all become [1][3]
+  // models vary in citation style: [1, 3], 【1】, 【1†L1-L2】, [1-2] all become [1][3]
   const text = String(reply || "").trim()
+    .replace(/[【\[]\s*(\d{1,3})\s*†[^】\]]*[】\]]/g, "[$1]")
     .replace(/[【\[]\s*(\d{1,3}(?:\s*[,;–-]\s*\d{1,3})+)\s*[】\]]/g, (_, list) => list.split(/\s*[,;–-]\s*/).map((n) => `[${n}]`).join(""))
     .replace(/【\s*(\d{1,3})\s*】/g, "[$1]");
   if (!text || /^NOT_IN_NOTES\b/i.test(text)) return null;

@@ -2,18 +2,13 @@
 
 Capstone project (KL University, Dept. of CSE, guide Dr. Neelima Gogineni). The owner wants a professional, full working product hosted in their own AWS account. Style rule from the owner: never use em dashes in replies or in site copy.
 
-## Current state
-- The app is finished and tested locally and in a browser-only preview. **Nothing is deployed to AWS yet. Your first job is the first real deploy.**
-- Real AWS pieces (Transcribe, Bedrock, CloudFront, Cognito auto-confirm) have never run against real AWS. Expect small first-deploy fixes.
-
-## First task: deploy
-1. Confirm tools: `node --version` (20+), `aws --version`, `aws sts get-caller-identity` (must print the owner's account).
-2. Owner must enable Bedrock model access (Amazon Nova Lite, Titan Text Embeddings V2) in the deploy region.
-3. Run `ALLOWED_EMAIL_DOMAINS="<college domain>" bash infra/deploy.sh us-east-1` (see docs/DEPLOY.md). Ask the owner for the domain if unknown.
-4. Verify in the browser: sign up, load sample videos, import a transcript, upload a short video (real Transcribe), Notes page, ask-your-notes (Bedrock), Library map, notifications.
-5. Tune `TH_REF_SEMANTIC` (0.50) and `TH_ASK_SEMANTIC` (0.33) if semantic matches look wrong.
-6. Optional quality upgrade: set `NOTES_MODEL_ID` to a Claude model on Bedrock (look up the exact id and inference-profile prefix for the region first).
-7. After it works: add the live URL to README/docs, then regenerate the PDF user manual (the old one in /manual is outdated and describes the old marketing demo).
+## Current state (October 2026)
+- **Deployed:** https://d349qer3boe6fg.cloudfront.net, stack `cloudnote-ai`, us-east-1, open sign-up (owner's choice). Redeploy command and options: docs/DEPLOY.md.
+- Verified on real AWS: Cognito sign-up, API, DynamoDB, S3 upload, Transcribe (via EventBridge to the worker), AI notes, ask-your-notes, map, notifications.
+- Bedrock: account quota is 0 tokens/day, so the LLM chain falls through Bedrock -> Groq (`openai/gpt-oss-120b`, working) -> Gemini (`gemini-3.8-flash`, often overloaded). Embeddings are off (`EMBED_MODEL_ID=none`), so search is keyword based. API keys live in `~/.cloudnote/*.key` on the owner's Mac, never in the repo.
+- When Bedrock works: redeploy without `EMBED_MODEL_ID=none`, reprocess videos, then tune `TH_REF_SEMANTIC` (0.50) and `TH_ASK_SEMANTIC` (0.33).
+- Open items: owner should restrict sign-up and delete the `cloudnote-deployer` access key when done.
+- User manual: `docs/manual/` (HTML source + PDF), built from screenshots of the live site.
 
 ## Security rules
 - Never write AWS keys into files, commits or chat. Use `aws configure` or SSO. Remind the owner to delete the IAM key/user afterwards.

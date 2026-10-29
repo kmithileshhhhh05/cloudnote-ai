@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CloudNote AI User Manual</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root { --ink:#16181d; --mute:#5b6270; --line:#e3e6eb; --accent:#4f6ef7; --soft:#f4f6fb; }
+  * { box-sizing: border-box; }
+  body { font: 10.5pt/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); margin: 0; }
+  h1, h2, h3 { line-height: 1.2; }
+  h2 { font-size: 18pt; margin: 0 0 6pt; padding-top: 2pt; border-bottom: 2px solid var(--accent); padding-bottom: 4pt; }
+  h3 { font-size: 12.5pt; margin: 14pt 0 4pt; }
+  p, li { orphans: 3; widows: 3; }
+  section { break-before: page; }
+  figure { margin: 10pt 0 12pt; break-inside: avoid; }
+  figure img { max-width: 100%; max-height: 84mm; width: auto; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 0 auto; }
+  figure.phone img { max-height: 150mm; }
+  figcaption { font-size: 9pt; color: var(--mute); margin-top: 4pt; }
+  .note { background: var(--soft); border-left: 3px solid var(--accent); padding: 7pt 10pt; margin: 10pt 0; break-inside: avoid; }
+  .warn { border-left-color: #d9922b; background: #fdf6ec; }
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 9.5pt; break-inside: avoid; }
+  th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 4pt 6pt; vertical-align: top; }
+  th { background: var(--soft); }
+  code, kbd { font: 9pt ui-monospace, Menlo, monospace; background: var(--soft); padding: 0 3pt; border-radius: 3px; }
+  b.ui { font-weight: 600; }
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; }
+  .cover h1 { font-size: 34pt; margin: 0; }
+  .cover .tag { font-size: 16pt; color: var(--accent); margin: 6pt 0 26pt; }
+  .cover .meta { color: var(--mute); font-size: 10.5pt; }
+  .toc ol { padding-left: 16pt; } .toc li { margin: 2pt 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>CloudNote AI</h1>
+  <div class="tag">User Manual: videos that remember each other</div>
+  <p>How to use every page and feature of the live CloudNote AI web app, how it works on AWS, and what to do when something goes wrong.</p>
+  <p class="meta">Live app: <b>https://d349qer3boe6fg.cloudfront.net</b><br>
+  Capstone Project, Department of CSE, KL University. Guide: Dr. Neelima Gogineni.<br>
+  Manual edition 2, October 2026. Every screenshot was taken from the live deployment.</p>
+</div>
+
+<section class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li>What CloudNote AI does</li>
+    <li>Getting started</li>
+    <li>Home</li>
+    <li>Adding videos and transcripts</li>
+    <li>The video page</li>
+    <li>Notes and ask-your-notes</li>
+    <li>Ask: searching your library</li>
+    <li>Context Recovery, remembered references and notifications</li>
+    <li>Follow-ups and the Library map</li>
+    <li>Command bar and mobile</li>
+    <li>How it works</li>
+    <li>Limits, privacy and troubleshooting</li>
+    <li>For maintainers</li>
+  </ol>
+  <div class="note"><b>About the sample videos.</b> The four sample videos (Server Setup, Application Setup Tutorial, Database Tutorial, Monitoring and Alerts) are small invented transcripts made to show the features. Their content, timestamps and links are illustrative, not measured results.</div>
+</section>
+
+<section>
+  <h2>1. What CloudNote AI does</h2>
+  <p>CloudNote AI turns recorded lectures, meetings and tutorials into notes you can search and question. Upload a video or audio file, or import a transcript, and CloudNote AI will:</p>
+  <ul>
+    <li><b>Transcribe</b> the recording with Amazon Transcribe into timestamped moments.</li>
+    <li><b>Write notes</b>: a summary, key points, action items and decisions. Every item links to the moment it came from.</li>
+    <li><b>Answer questions</b> from your notes, with numbered citations you can click.</li>
+    <li><b>Connect recordings</b>: when one video says "as we discussed earlier", it suggests where another video explains it (Context Recovery).</li>
+    <li><b>Remember gaps</b>: if nothing explains a reference yet, it can keep checking every new upload and notify you once when something matches.</li>
+    <li><b>Track follow-ups</b>: phrases like "in the next video we will cover..." are tracked until a later video covers them.</li>
+    <li><b>Map your library</b>: which videos depend on which, a suggested watch order and a gaps report.</li>
+  </ul>
+  <p>Each user only ever sees their own library.</p>
+  <div class="note">We found no existing tool that combines cross-video reference recovery with remembered, re-checked gaps in this way. That is our observation from the tools we reviewed, not a claim that none exists.</div>
+</section>
+
+<section>
+  <h2>2. Getting started</h2>
+  <h3>Create an account</h3>
+  <ol>
+    <li>Open <b>https://d349qer3boe6fg.cloudfront.net</b>.</li>
+    <li>Click <b class="ui">Create an account</b> under the sign-in form.</li>
+    <li>Enter your email and a password of at least 8 characters that includes a number, then submit. You are signed in straight away; there is no confirmation email.</li>
+  </ol>
+  <figure><img src="img/01-sign-in.jpg" alt="Sign-in page"><figcaption>Figure 1. The sign-in page. New users click <b>Create an account</b>.</figcaption></figure>
+  <h3>Try it with sample videos</h3>
+  <p>A new library is empty. Click <b class="ui">Try with sample videos</b> to add two sample videos (Server Setup and Application Setup Tutorial). The <b class="ui">Library</b> page offers the other two (Database Tutorial, Monitoring and Alerts). Samples cost nothing: they skip transcription.</p>
+  <figure><img src="img/02-home-empty.jpg" alt="Empty home page"><figcaption>Figure 2. The first screen after signing up.</figcaption></figure>
+</section>
+
+<section>
+  <h2>3. Home and Library</h2>
+  <p><b class="ui">Home</b> greets you, offers a quick question box and shows your library at a glance: number of videos, hours indexed, searchable moments and open items. <b class="ui">Needs your attention</b> lists references that may now be answered and follow-ups still waiting.</p>
+  <figure><img src="img/04-home.jpg" alt="Home dashboard"><figcaption>Figure 3. Home with the sample videos loaded.</figcaption></figure>
+  <p><b class="ui">Library</b> shows every video as a card with cover art, status and length. Use the filters and search box to narrow the list, and the sample buttons to add the remaining sample videos.</p>
+  <figure><img src="img/03-library.jpg" alt="Library"><figcaption>Figure 4. The Library with all four sample videos.</figcaption></figure>
+</section>
+
+<section>
+  <h2>4. Adding videos and transcripts</h2>
+  <p>Open <b class="ui">Add video</b>. There are two ways to add a recording:</p>
+  <table>
+    <tr><th>Option</th><th>What to provide</th><th>What happens</th></tr>
+    <tr><td><b>Media file</b></td><td>mp4, m4a, mp3, wav, flac, ogg, webm or amr, up to 500 MB. Choose the spoken language.</td><td>The file uploads straight to private storage (Amazon S3), Amazon Transcribe converts the speech to text, and the notes are generated. A short clip takes about a minute.</td></tr>
+    <tr><td><b>Transcript</b></td><td>SRT, WebVTT, Amazon Transcribe JSON or plain text, pasted or typed.</td><td>Notes are generated right away. No transcription cost.</td></tr>
+  </table>
+  <p>Languages: English (US, India, UK), Hindi, Telugu, Spanish, French and German. Each user can keep up to 30 videos.</p>
+  <figure><img src="img/16-add-video.jpg" alt="Add video page"><figcaption>Figure 5. The Add video page.</figcaption></figure>
+  <figure><img src="img/17-transcribing.jpg" alt="Transcribing"><figcaption>Figure 6. While Amazon Transcribe works, the video page shows progress and fills in by itself when done.</figcaption></figure>
+</section>
+
+<section>
+  <h2>5. The video page</h2>
+  <p>Open any video from the Library. The left side has the player (or a note for imported transcripts), the <b>Moments</b> timeline and the full transcript with its own search box. Click any timestamp to jump the player to that moment.</p>
+  <p>The header shows the status, length, number of moments and how the notes were made: <b class="ui">AI notes</b> or <b class="ui">extractive notes</b>. The buttons <b class="ui">Rename</b>, <b class="ui">Reprocess</b> (regenerate notes) and <b class="ui">Delete</b> are at the top right.</p>
+  <figure><img src="img/18-transcribed-video.jpg" alt="Transcribed video"><figcaption>Figure 7. A real 11-second speech clip after Amazon Transcribe and AI notes on the live site. The follow-up "In the next video..." was detected automatically.</figcaption></figure>
+  <h3>The four tabs</h3>
+  <table>
+    <tr><th>Tab</th><th>Use it to</th></tr>
+    <tr><td><b>Notes</b></td><td>Read the summary, key points, action items and decisions. <b class="ui">Copy as Markdown</b> and <b class="ui">Download .md</b> export them.</td></tr>
+    <tr><td><b>Ask</b></td><td>Find the moments in this video that answer a question.</td></tr>
+    <tr><td><b>Context</b></td><td>See references to other videos ("as discussed earlier") and their suggested sources. See section 8.</td></tr>
+    <tr><td><b>Compare</b></td><td>Paste your own notes to see which key points you covered, which may be wrong and which you missed. <b class="ui">Add to my notes</b> copies a missed point into your notes.</td></tr>
+  </table>
+  <figure><img src="img/05-video-notes.jpg" alt="Video page notes tab"><figcaption>Figure 8. The Notes tab of the Application Setup Tutorial sample.</figcaption></figure>
+</section>
+
+<section>
+  <h2>5. The video page (continued)</h2>
+  <figure><img src="img/06-video-ask.jpg" alt="Ask tab"><figcaption>Figure 9. The Ask tab finds the moments in this video that answer a question.</figcaption></figure>
+  <figure><img src="img/08-video-compare.jpg" alt="Compare tab"><figcaption>Figure 10. The Compare tab checks your own notes against the video's key points.</figcaption></figure>
+</section>
+
+<section>
+  <h2>6. Notes and ask-your-notes</h2>
+  <p>The <b class="ui">Notes</b> page collects the notes of every ready video as compact cards. Filter them with the box at the top, or open a card to read it full page. The reader (<code>#/notes/&lt;video&gt;</code>) has its own search box for searching inside that note.</p>
+  <figure><img src="img/09-notes.jpg" alt="Notes page"><figcaption>Figure 11. The Notes page.</figcaption></figure>
+  <h3>Ask your notes</h3>
+  <p>Type a question in <b class="ui">Ask your notes</b>, or click a suggested question. The AI answers <b>only from your notes</b> and cites the passages it used with numbers like [1]. The sources are listed under the answer with links to their moments. When your notes do not cover the question, it says so and shows the closest notes instead of guessing.</p>
+  <figure><img src="img/10-notes-ask.jpg" alt="Ask your notes"><figcaption>Figure 12. An AI answer with citations, built from the sample notes.</figcaption></figure>
+</section>
+
+<section>
+  <h2>6. Notes (continued) and 7. Ask</h2>
+  <figure><img src="img/11-note-reader.jpg" alt="Note reader"><figcaption>Figure 13. The full-page note reader.</figcaption></figure>
+  <h3>7. Ask: searching your library</h3>
+  <p>The <b class="ui">Ask</b> page searches every transcript in your library and returns playable moments, best match first. It is the fastest way to find where something was said.</p>
+  <figure><img src="img/12-ask.jpg" alt="Ask page"><figcaption>Figure 14. Ask returns matching moments across all videos.</figcaption></figure>
+</section>
+
+<section>
+  <h2>8. Context Recovery, remembered references and notifications</h2>
+  <p>Recordings often lean on each other: "use the database settings from the earlier tutorial". The <b class="ui">Context</b> tab lists these references, each with its moment and the best candidate explanations from your other videos.</p>
+  <ul>
+    <li><b class="ui">Accept this source</b> links the reference to that explanation.</li>
+    <li><b class="ui">Leave unresolved and remember it</b> keeps the reference as a saved question. CloudNote AI re-checks it every time you add a video.</li>
+  </ul>
+  <figure><img src="img/07-video-context.jpg" alt="Context tab"><figcaption>Figure 15. The Context tab with references found in the Application Setup Tutorial.</figcaption></figure>
+  <h3>Remember the Missing Explanation</h3>
+  <p>When a new video explains a remembered reference, the bell shows a badge and the notification panel offers the match <b>once</b>. Accept it to create the link, or dismiss it.</p>
+  <figure><img src="img/14-notifications.jpg" alt="Notifications"><figcaption>Figure 16. After the database reference was remembered, adding the Database Tutorial produced this notification.</figcaption></figure>
+</section>
+
+<section>
+  <h2>9. Follow-ups and the Library map</h2>
+  <p>A <b>follow-up</b> is a forward reference such as "in the next video we will explain indexes". CloudNote AI tracks each one until a later video covers it, and lists those still waiting on Home and in the gaps report.</p>
+  <p>The <b class="ui">Library map</b> draws your videos and the links between them: confirmed links, gaps (missing explanations and follow-ups not yet covered) and candidates to review. Below the map are a <b>suggested watch order</b> (sources before the videos that rely on them) and a <b>gaps and follow-ups report</b> you can copy.</p>
+  <figure><img src="img/13-map.jpg" alt="Library map"><figcaption>Figure 17. The Library map for the sample videos.</figcaption></figure>
+</section>
+
+<section>
+  <h2>10. Command bar and mobile</h2>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>K</kbd> (<kbd>Cmd</kbd>+<kbd>K</kbd> on a Mac) anywhere to open the command bar. Type to find a video or page, move with the arrow keys and press <kbd>Enter</kbd>. <kbd>Esc</kbd> closes it.</p>
+  <figure><img src="img/15-command-bar.jpg" alt="Command bar"><figcaption>Figure 18. The command bar.</figcaption></figure>
+  <p>On a phone the side menu becomes a bottom tab bar (Home, Library, Notes, Ask, Map), and the bell and sign-out move to the top.</p>
+  <figure class="phone"><img src="img/19-mobile.jpg" alt="Mobile home"><figcaption>Figure 19. Home on a phone-sized screen.</figcaption></figure>
+</section>
+
+<section>
+  <h2>11. How it works</h2>
+  <p>CloudNote AI is fully serverless on AWS: nothing runs while no one uses it.</p>
+  <table>
+    <tr><th>Part</th><th>AWS service</th><th>Role</th></tr>
+    <tr><td>Website</td><td>S3 + CloudFront</td><td>Serves the app over HTTPS; <code>/api/*</code> goes to the API.</td></tr>
+    <tr><td>Sign-in</td><td>Amazon Cognito</td><td>Accounts and tokens; the API rejects requests without a valid token.</td></tr>
+    <tr><td>API</td><td>API Gateway (HTTP API) + Lambda</td><td>All app requests.</td></tr>
+    <tr><td>Data</td><td>DynamoDB</td><td>Videos, transcripts, notes, references, notifications (one table).</td></tr>
+    <tr><td>Media</td><td>S3 (private)</td><td>Uploads and playback through short-lived signed links.</td></tr>
+    <tr><td>Speech to text</td><td>Amazon Transcribe + EventBridge</td><td>Transcribes uploads; EventBridge wakes the worker Lambda when a job finishes.</td></tr>
+    <tr><td>AI notes and answers</td><td>Amazon Bedrock, with free fallbacks</td><td>See below.</td></tr>
+  </table>
+  <h3>Which AI writes the notes</h3>
+  <p>The backend tries each model in order and uses the first one that answers:</p>
+  <ol>
+    <li><b>Amazon Bedrock</b> (Amazon Nova Lite), the intended model.</li>
+    <li><b>Groq</b> free tier (<code>openai/gpt-oss-120b</code>).</li>
+    <li><b>Google Gemini</b> free tier (<code>gemini-3.8-flash</code>).</li>
+    <li>Built-in extractive notes (key sentences from the transcript) if no model answers.</li>
+  </ol>
+  <div class="note warn"><b>Current status (October 2026).</b> The AWS account is new, and Bedrock allows it 0 tokens per day for now. Notes and answers on the live site therefore come from <b>Groq</b>, and library search is keyword based instead of meaning based. Bedrock takes over automatically when AWS raises the quota. Transcription always uses Amazon Transcribe.</div>
+</section>
+
+<section>
+  <h2>12. Limits, privacy and troubleshooting</h2>
+  <h3>Limits</h3>
+  <ul>
+    <li>Up to 30 videos per user and 500 MB per file. One spoken language per upload.</li>
+    <li>No password reset yet, and sign-up does not verify email addresses.</li>
+    <li>Media links expire after a while; reload the page if playback stops.</li>
+  </ul>
+  <h3>Privacy</h3>
+  <ul>
+    <li>Your videos and notes are private to your account.</li>
+    <li>While Groq or Gemini writes the notes, transcript text is sent to that provider. Do not upload confidential recordings.</li>
+  </ul>
+  <h3>Troubleshooting</h3>
+  <table>
+    <tr><th>Problem</th><th>What to do</th></tr>
+    <tr><td>Sign-up is rejected</td><td>Use a password of 8+ characters with a number. If the site limits sign-up to certain email domains, use an allowed address.</td></tr>
+    <tr><td>Header says <b>extractive notes</b></td><td>No AI model answered when the notes were made, for example because a provider was busy. Click <b class="ui">Reprocess</b> later.</td></tr>
+    <tr><td>Video stuck on transcribing</td><td>Short clips finish in about a minute. After 30 minutes the video can be started again. Check that the file has speech in the chosen language.</td></tr>
+    <tr><td>"The upload did not finish"</td><td>Upload the file again; keep the tab open until the upload completes.</td></tr>
+    <tr><td>Ask your notes finds nothing</td><td>The AI only answers from your notes. Rephrase with words used in the video, or check that the video's notes are ready.</td></tr>
+    <tr><td>Playback stops</td><td>The signed media link expired. Reload the page.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>13. For maintainers</h2>
+  <p>Source layout, tests and full deployment steps are in <code>README.md</code> and <code>docs/DEPLOY.md</code>. In short:</p>
+  <table>
+    <tr><th>Task</th><th>Command</th></tr>
+    <tr><td>Build</td><td><code>node build.mjs</code></td></tr>
+    <tr><td>Run locally (no AWS)</td><td><code>DATA_DIR=/tmp/cn-data node backend/local-server.mjs</code>, then open http://localhost:8787</td></tr>
+    <tr><td>Tests</td><td><code>node --test tests/engine.test.mjs backend/tests/*.test.mjs</code></td></tr>
+    <tr><td>Deploy or update</td><td><code>bash infra/deploy.sh us-east-1</code> with the options in docs/DEPLOY.md</td></tr>
+    <tr><td>Remove everything</td><td><code>bash infra/destroy.sh us-east-1</code></td></tr>
+  </table>
+  <h3>Lessons from the first deploy</h3>
+  <ul>
+    <li><code>aws cloudformation package</code> ignores <code>Globals.CodeUri</code>; each function needs its own <code>CodeUri</code>.</li>
+    <li>New AWS accounts on the Free plan cannot use Amazon Transcribe; the paid plan (which keeps remaining credits) is required.</li>
+    <li>Bedrock on a new account may have a 0 tokens per day quota; ask AWS Support for an increase, and use the free fallbacks meanwhile.</li>
+    <li>Model failures are logged in CloudWatch as <code>model failed, trying the next one</code>; replies the app cannot use are logged as <code>ask: reply had no usable citations</code>.</li>
+  </ul>
+  <h3>Security checklist</h3>
+  <ul>
+    <li>Set <code>ALLOWED_EMAIL_DOMAINS</code> to limit sign-up, and keep an AWS Budgets alert on the account.</li>
+    <li>Never commit AWS, Groq or Gemini keys. Delete the deploy access key when deployments are finished.</li>
+  </ul>
+</section>
+
+</body>
+</html>
