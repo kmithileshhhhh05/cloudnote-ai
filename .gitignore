@@ -5,3 +5,4 @@ backend/dist/
 .DS_Store
 *.log
 .env*
+docs/submission/build/
