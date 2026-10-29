@@ -1,0 +1,313 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: CloudNote AI - serverless video notes and semantic search (CloudFront, S3, Cognito, API Gateway, Lambda, DynamoDB, Transcribe, Bedrock)
+
+Parameters:
+  NotesModelId:
+    Type: String
+    Default: amazon.nova-lite-v1:0
+    Description: Bedrock model id used to write notes. Use "none" to write notes without a model (extractive).
+  EmbedModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+    Description: Bedrock embedding model id for semantic search. Use "none" for keyword search only.
+  MaxVideos:
+    Type: Number
+    Default: 30
+    Description: Videos allowed per user.
+  MaxMediaMB:
+    Type: Number
+    Default: 500
+    Description: Largest upload in megabytes.
+
+  AllowedEmailDomains:
+    Type: String
+    Default: ""
+    Description: Optional comma-separated email domains allowed to sign up (for example "example.com,school.edu"). Empty means anyone can sign up.
+
+  BedrockRegion:
+    Type: String
+    Default: ""
+    Description: Optional region for Bedrock calls (for example us-west-2) when models are not available in the stack's region. Empty means the stack's region.
+
+  GeminiApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Optional Google Gemini API key, used for notes and Q&A when Bedrock is unavailable. Empty disables Gemini.
+  GeminiModel:
+    Type: String
+    Default: gemini-3.8-flash
+    Description: Gemini model id used when GeminiApiKey is set.
+
+  GroqApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Optional Groq API key (free tier), tried after Bedrock for notes and Q&A. Empty disables Groq.
+  GroqModel:
+    Type: String
+    Default: openai/gpt-oss-120b
+    Description: Groq model id used when GroqApiKey is set.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+
+Resources:
+  # ---------------- data ----------------
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      SSESpecification: { SSEEnabled: true }
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      LifecycleConfiguration:
+        Rules:
+          - { Id: abort-partial-uploads, Status: Enabled, AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 } }
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
+            AllowedHeaders: ["*"]
+            ExposedHeaders: [ETag, Content-Length, Content-Range]
+            MaxAge: 3000
+
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+
+  # ---------------- auth ----------------
+  PreSignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.preSignUp
+      CodeUri: ../backend/dist/  # per function: 'aws cloudformation package' ignores Globals.CodeUri
+      MemorySize: 128
+      Timeout: 5
+      Environment:
+        Variables:
+          ALLOWED_EMAIL_DOMAINS: !Ref AllowedEmailDomains
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameAttributes: [email]
+      UsernameConfiguration: { CaseSensitive: false }
+      Policies:
+        PasswordPolicy: { MinimumLength: 8, RequireLowercase: true, RequireNumbers: true, RequireUppercase: false, RequireSymbols: false }
+      Schema:
+        - { Name: email, AttributeDataType: String, Required: true, Mutable: true }
+      LambdaConfig:
+        PreSignUp: !GetAtt PreSignUpFunction.Arn
+      AccountRecoverySetting:
+        RecoveryMechanisms: [{ Name: verified_email, Priority: 1 }]
+
+  PreSignUpPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PreSignUpFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows: [ALLOW_USER_PASSWORD_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+      PreventUserExistenceErrors: ENABLED
+      IdTokenValidity: 60
+      AccessTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits: { IdToken: minutes, AccessToken: minutes, RefreshToken: days }
+
+  # ---------------- compute ----------------
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.worker
+      CodeUri: ../backend/dist/  # per function: 'aws cloudformation package' ignores Globals.CodeUri
+      MemorySize: 1536
+      Timeout: 900
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          MEDIA_BUCKET: !Ref MediaBucket
+          NOTES_MODEL_ID: !Ref NotesModelId
+          EMBED_MODEL_ID: !Ref EmbedModelId
+          BEDROCK_REGION: !Ref BedrockRegion
+          GEMINI_API_KEY: !Ref GeminiApiKey
+          GEMINI_MODEL: !Ref GeminiModel
+          GEMINI_BUDGET_MS: "240000"
+          GROQ_API_KEY: !Ref GroqApiKey
+          GROQ_MODEL: !Ref GroqModel
+          GROQ_BUDGET_MS: "60000"
+          MAX_VIDEOS: !Ref MaxVideos
+          MAX_MEDIA_MB: !Ref MaxMediaMB
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - { Effect: Allow, Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:Query, dynamodb:BatchWriteItem], Resource: !GetAtt Table.Arn }
+            - { Effect: Allow, Action: [s3:GetObject, s3:PutObject, s3:DeleteObject], Resource: !Sub "${MediaBucket.Arn}/*" }
+            - { Effect: Allow, Action: [s3:ListBucket], Resource: !GetAtt MediaBucket.Arn }
+            - { Effect: Allow, Action: [transcribe:GetTranscriptionJob], Resource: "*" }
+            - { Effect: Allow, Action: [bedrock:InvokeModel], Resource: "*" }
+      Events:
+        TranscribeDone:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source: [aws.transcribe]
+              detail-type: [Transcribe Job State Change]
+              detail:
+                TranscriptionJobStatus: [COMPLETED, FAILED]
+                TranscriptionJobName:
+                  - prefix: "cn."
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.api
+      CodeUri: ../backend/dist/  # per function: 'aws cloudformation package' ignores Globals.CodeUri
+      MemorySize: 1024
+      Timeout: 29
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          MEDIA_BUCKET: !Ref MediaBucket
+          NOTES_MODEL_ID: !Ref NotesModelId
+          EMBED_MODEL_ID: !Ref EmbedModelId
+          BEDROCK_REGION: !Ref BedrockRegion
+          GEMINI_API_KEY: !Ref GeminiApiKey
+          GEMINI_MODEL: !Ref GeminiModel
+          GEMINI_BUDGET_MS: "12000"
+          GROQ_API_KEY: !Ref GroqApiKey
+          GROQ_MODEL: !Ref GroqModel
+          GROQ_BUDGET_MS: "12000"
+          MAX_VIDEOS: !Ref MaxVideos
+          MAX_MEDIA_MB: !Ref MaxMediaMB
+          WORKER_FUNCTION: !Ref WorkerFunction
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - { Effect: Allow, Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:Query, dynamodb:BatchWriteItem], Resource: !GetAtt Table.Arn }
+            - { Effect: Allow, Action: [s3:GetObject, s3:PutObject, s3:DeleteObject], Resource: !Sub "${MediaBucket.Arn}/*" }
+            - { Effect: Allow, Action: [s3:ListBucket], Resource: !GetAtt MediaBucket.Arn }
+            - { Effect: Allow, Action: [transcribe:StartTranscriptionJob, transcribe:GetTranscriptionJob], Resource: "*" }
+            - { Effect: Allow, Action: [lambda:InvokeFunction], Resource: !GetAtt WorkerFunction.Arn }
+            - { Effect: Allow, Action: [bedrock:InvokeModel], Resource: "*" }
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/{proxy+}
+            Method: ANY
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings: { ThrottlingBurstLimit: 50, ThrottlingRateLimit: 25 }
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience: [!Ref UserPoolClient]
+
+  # ---------------- delivery ----------------
+  SiteOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig: { Name: !Sub "${AWS::StackName}-site", OriginAccessControlOriginType: s3, SigningBehavior: always, SigningProtocol: sigv4 }
+
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${AWS::StackName}-security"
+        SecurityHeadersConfig:
+          ContentTypeOptions: { Override: true }
+          FrameOptions: { FrameOption: DENY, Override: true }
+          ReferrerPolicy: { ReferrerPolicy: strict-origin-when-cross-origin, Override: true }
+          StrictTransportSecurity: { AccessControlMaxAgeSec: 31536000, IncludeSubdomains: true, Override: true }
+          ContentSecurityPolicy:
+            Override: true
+            ContentSecurityPolicy: !Sub "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cognito-idp.${AWS::Region}.amazonaws.com https://*.s3.${AWS::Region}.amazonaws.com https://*.s3.amazonaws.com; media-src 'self' blob: https://*.s3.${AWS::Region}.amazonaws.com https://*.s3.amazonaws.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt SiteOAC.Id
+            S3OriginConfig: { OriginAccessIdentity: "" }
+          - Id: api
+            DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            CustomOriginConfig: { OriginProtocolPolicy: https-only, OriginSSLProtocols: [TLSv1.2] }
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref SecurityHeaders
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            ResponseHeadersPolicyId: !Ref SecurityHeaders
+            Compress: true
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition: { StringEquals: { "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}" } }
+
+Outputs:
+  SiteUrl: { Value: !Sub "https://${Distribution.DomainName}" }
+  SiteBucketName: { Value: !Ref SiteBucket }
+  DistributionId: { Value: !Ref Distribution }
+  UserPoolId: { Value: !Ref UserPool }
+  UserPoolClientId: { Value: !Ref UserPoolClient }
+  MediaBucketName: { Value: !Ref MediaBucket }
+  TableName: { Value: !Ref Table }

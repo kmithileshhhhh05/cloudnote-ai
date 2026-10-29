@@ -1,0 +1,29 @@
+{
+  "name": "cloudnote-ai-site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1158.0",
+    "@aws-sdk/client-dynamodb": "^3.1158.0",
+    "@aws-sdk/client-lambda": "^3.1158.0",
+    "@aws-sdk/client-s3": "^3.1158.0",
+    "@aws-sdk/client-transcribe": "^3.1158.0",
+    "@aws-sdk/lib-dynamodb": "^3.1158.0",
+    "@aws-sdk/s3-request-presigner": "^3.1158.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "aws-sdk-client-mock": "^4.1.0",
+    "esbuild": "^0.28.2"
+  },
+  "type": "module",
+  "private": true
+}

@@ -1,0 +1,38 @@
+import { h, icon, fmtTime } from "../ui.js";
+
+export const STATUS = {
+  awaiting_upload: ["dim", "Waiting for upload"], transcribing: ["amber", "Transcribing"], processing: ["amber", "Analyzing"], ready: ["green", "Ready"], failed: ["red", "Failed"],
+};
+export const statusChip = (s) => { const [c, l] = STATUS[s] || ["dim", s]; return h("span", { class: "pill " + c }, ["transcribing", "processing"].includes(s) ? h("span", { class: "dot live" }) : null, l); };
+
+export function highlight(text, phrase) {
+  if (!phrase) return [text];
+  const i = text.toLowerCase().indexOf(phrase.toLowerCase());
+  if (i < 0) return [text];
+  return [text.slice(0, i), h("mark", null, text.slice(i, i + phrase.length)), text.slice(i + phrase.length)];
+}
+
+/** A link to a moment in a video. Same video: calls onSeek. Other video: navigates. */
+export function momentLink(videoId, start, { currentId, onSeek, label } = {}) {
+  const t = fmtTime(start);
+  const href = `#/v/${videoId}` + (start != null ? `?t=${Math.floor(start)}` : "");
+  return h("a", { class: "ts-link", href, onclick: (e) => { if (currentId === videoId && onSeek) { e.preventDefault(); onSeek(start); } } }, label || t);
+}
+
+export function momentCard(r, { currentId, onSeek, extra } = {}) {
+  return h("div", { class: "cand" },
+    h("div", { class: "ct" }, h("span", null, r.title || "This video", " "), momentLink(r.videoId, r.start, { currentId, onSeek }), r.score != null ? h("span", { class: "sc" }, h("span", { class: "bar" }, h("i", { style: { "--w": Math.min(100, Math.round(r.score * 125)) + "%" } })), r.score.toFixed(2)) : null),
+    h("div", { class: "cx" }, r.text), extra || null);
+}
+
+export function emptyState(title, body, ...actions) {
+  return h("div", { class: "empty-state" }, h("div", { class: "es-ic" }, icon("film")), h("h2", null, title), h("p", null, body), h("div", { class: "es-acts" }, ...actions));
+}
+
+export function copyText(text, ok, toast) {
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast(ok), () => toast("Copy was blocked by the browser.", "err"));
+}
+export function downloadText(name, text, mime = "text/markdown") {
+  const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: mime })), download: name });
+  document.body.append(a); a.click(); a.remove();
+}

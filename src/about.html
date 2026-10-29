@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CloudNote AI | Notes, search and context for any video</title>
+<meta name="description" content="CloudNote AI turns long videos into timestamped notes, searches them by meaning, and connects what one recording skips to where another explains it. Engineering Capstone Project, Dept. of CSE, KL University.">
+<meta name="theme-color" content="#05060a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CloudNote AI | Videos that remember each other">
+<meta property="og:description" content="Timestamped notes, semantic video search, and three features that link recordings together. Try the live demo in your browser.">
+<meta property="og:image" content="og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<script src="boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"><i id="progress"></i></div>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset=".5" stop-color="#5aa2ff"/><stop offset="1" stop-color="#46e0ff"/></linearGradient>
+    <symbol id="logo" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="9" fill="url(#lg)"/><path d="M7 17v-2M10.5 20V12M14 23V9M17.5 19.5v-7M21 16.5v-1M24.5 18v-4" stroke="#05060a" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4.2" height="15" rx="1" fill="currentColor" stroke="none"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/></symbol>
+    <symbol id="i-cols" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-graph" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><circle cx="12" cy="6" r="2.5"/><path d="M11 8.3L7 15.7M13 8.3l4 7.4"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"/></symbol>
+  </defs>
+</svg>
+<style>svg use { pointer-events: none; } .i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }</style>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="CloudNote AI, back to top"><svg><use href="#logo"/></svg><span>Cloud<b>Note</b> AI</span></a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#problem">Problem</a>
+      <a href="#features">Features</a>
+      <a href="#demo">Live demo</a>
+      <a href="#pipeline">How it works</a>
+      <a href="#roadmap">Use cases</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-right">
+      <a class="btn btn-primary btn-sm nav-cta" href="index.html">Open the app</a>
+      <button class="kbd-btn" id="open-pal" type="button" aria-label="Search the site (Ctrl or Command K)"><svg class="i"><use href="#i-search"/></svg><span class="kbd-label">Search</span><kbd>Ctrl K</kbd></button>
+      <button class="burger" id="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span></button>
+    </div>
+  </div>
+</header>
+<div class="drawer" id="drawer" aria-hidden="true">
+  <a href="#problem"><span>01</span>Problem</a>
+  <a href="#features"><span>02</span>Features</a>
+  <a href="#demo"><span>03</span>Live demo</a>
+  <a href="#pipeline"><span>04</span>How it works</a>
+  <a href="#roadmap"><span>05</span>Use cases</a>
+  <a href="#faq"><span>06</span>FAQ</a>
+  <a href="project.html"><span>07</span>Project details</a>
+</div>
+
+<main id="main">
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="badge reveal"><b>New</b><span>Notes, search and context for any video</span></div>
+      <h1 class="reveal" style="--d:80ms">Videos that <span class="serif grad-text">remember</span> each other.</h1>
+      <p class="lede reveal" style="--d:160ms">CloudNote AI turns long recordings into timestamped notes you can search by meaning. Then it goes further: when a video says "as we covered earlier", it finds where, in your own library, and keeps looking even for videos you have not uploaded yet.</p>
+      <div class="cta-row reveal" style="--d:240ms">
+        <a class="btn btn-primary" href="index.html">Open the app <svg class="i"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-ghost" href="#demo">Try the live demo <svg class="i"><use href="#i-arrow"/></svg></a>
+        
+      </div>
+      <div class="feature-pills reveal" style="--d:320ms">
+        <a class="chip" href="#features"><span class="dot" style="color:var(--cyan)"></span>Video Context Recovery</a>
+        <a class="chip" href="#features"><span class="dot" style="color:var(--green)"></span>My Notes vs Video</a>
+        <a class="chip" href="#features"><span class="dot" style="color:var(--amber)"></span>Remember the Missing Explanation</a>
+      </div>
+      <div class="hero-meta reveal" style="--d:400ms"><span>Lectures</span><span>Meetings</span><span>Tutorials</span><span>Training</span></div>
+    </div>
+
+    <div class="stage reveal" style="--d:200ms" aria-label="Animated example of CloudNote AI finding a referenced explanation">
+      <div class="stage-glow"></div>
+      <div class="float-tag a" aria-hidden="true"><span class="dot live" style="color:var(--green)"></span>Reference detected</div>
+      <div class="float-tag b" aria-hidden="true"><svg class="i" style="color:var(--amber)"><use href="#i-bell"/></svg>Checks again after every upload</div>
+      <div class="win">
+        <div class="win-bar"><div class="lights"><i></i><i></i><i></i></div><span class="t" id="h-title">Product Tutorial</span><span class="pill dim" id="h-day">Day 1</span></div>
+        <div class="stage-body">
+          <div class="vframe">
+            <div class="meta"><span id="h-time">06:10</span><span>captions</span></div>
+            <p class="quote" id="h-quote" aria-live="off"></p>
+            <div class="wave" id="h-wave" aria-hidden="true"></div>
+          </div>
+          <div class="result" id="h-result" aria-live="polite"><div class="shimmer" style="width:60%"></div><div class="shimmer" style="width:84%"></div><div class="shimmer" style="width:42%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue" aria-hidden="true"></div>
+</section>
+
+<!-- ================= PROBLEM ================= -->
+<section class="section" id="problem">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">01</span>The problem</span>
+      <h2 class="h2 wide">Long videos hold knowledge you can't <span class="serif">easily</span> reach.</h2>
+      <p class="lede">Online learning, meetings, training sessions and tutorials produce hours of recordings. Watching everything again to find one explanation, or to check your own notes, is slow and repetitive.</p>
+    </div>
+    <div class="grid g3">
+      <article class="card prob reveal">
+        <div class="big">1</div>
+        <h3>References without a source</h3>
+        <p>Videos may refer to an earlier discussion without repeating the explanation. Users must search other recordings to find it.</p>
+        <div class="mini">
+          <div class="mini-vid"><span class="thumb"></span>Product Tutorial<span class="sq">"previous tutorial" @ 06:10</span></div>
+          <div class="mini-vid" style="opacity:.6"><span class="thumb"></span>Server Setup<span class="sq">? ? ?</span></div>
+        </div>
+      </article>
+      <article class="card prob reveal" style="--d:90ms">
+        <div class="big">2</div>
+        <h3>Notes that drift from the video</h3>
+        <p>Personal notes may omit an important point or record a detail differently from the video. Manual checking takes time.</p>
+        <div class="mini">
+          <div class="mini-vid"><span class="ts">notes</span>"port 8080"</div>
+          <div class="mini-vid"><span class="ts">video</span>"port 8000" <span class="sq">04:20</span></div>
+        </div>
+      </article>
+      <article class="card prob reveal" style="--d:180ms">
+        <div class="big">3</div>
+        <h3>Hours spent re-watching</h3>
+        <p>Watching whole videos and writing notes by hand is time-consuming, and makes it hard to spot key concepts or revisit one specific section.</p>
+        <div class="mini">
+          <div class="mini-vid"><span class="ts">1h 20m</span>lecture recording</div>
+          <div class="mini-vid"><span class="ts">0:42</span>the part you needed</div>
+        </div>
+      </article>
+    </div>
+    <div class="callout reveal"><span class="q" aria-hidden="true">"</span><div><p>Can source-linked suggestions help users find context and review their notes faster?</p><small>What we are testing</small></div></div>
+  </div>
+</section>
+
+<!-- ================= PLATFORM / ABSTRACT ================= -->
+<section class="section section-alt" id="platform">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">02</span>The platform</span>
+      <h2 class="h2 wide">From raw recording to <span class="serif">searchable</span> knowledge.</h2>
+      <p class="lede">Upload lecture videos, meeting recordings, training sessions or video links. The platform transcribes the speech, organizes it into notes and lets you ask questions in plain language, then jumps to the exact moment in the video.</p>
+    </div>
+    <div class="grid g3">
+      <article class="card reveal"><div class="ico"><svg class="i"><use href="#i-mic"/></svg></div><h3>Speech to transcript</h3><p>Speech-to-text produces a timestamped transcript, saved in small chunks so every claim can point back to a moment.</p></article>
+      <article class="card reveal" style="--d:70ms"><div class="ico"><svg class="i"><use href="#i-note"/></svg></div><h3>Notes and summaries</h3><p>Organized notes, summaries and key points, each linked to its source section of the video.</p></article>
+      <article class="card reveal" style="--d:140ms"><div class="ico"><svg class="i"><use href="#i-clock"/></svg></div><h3>Important timestamps</h3><p>Jump straight to the section that matters. No scrubbing through an hour to find one step.</p></article>
+      <article class="card reveal"><div class="ico"><svg class="i"><use href="#i-tasks"/></svg></div><h3>Action items and decisions</h3><p>For meetings and training sessions, surface what was decided and what needs doing.</p></article>
+      <article class="card reveal" style="--d:70ms"><div class="ico"><svg class="i"><use href="#i-search"/></svg></div><h3>Semantic search</h3><p>Search by meaning or ask a natural-language question. Matches come back with video timestamps.</p></article>
+      <article class="card reveal" style="--d:140ms"><div class="ico"><svg class="i"><use href="#i-cloud"/></svg></div><h3>Cloud-backed</h3><p>Scalable storage, remote access from authorized devices and centralized data for large video files.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">03</span>Standout features</span>
+      <h2 class="h2 wide">The part that connects your <span class="serif">whole library.</span></h2>
+      <p class="lede">Transcripts and search are table stakes. These features connect your recordings to each other, with the evidence on screen and you always in control.</p>
+    </div>
+    <div class="grid g3" id="feat-cards">
+      <article class="card reveal"><div class="ico" style="color:var(--cyan)"><svg class="i"><use href="#i-compass"/></svg></div><h3>Video Context Recovery</h3><p>Detects phrases such as "as discussed earlier" or "refer to the previous video", uses the surrounding sentences to search your other videos, and shows up to three matching excerpts with titles and timestamps.</p><div class="cta-row" style="margin-top:22px"><button class="btn btn-ghost btn-sm" data-open-tab="context">Try it live <svg class="i"><use href="#i-arrow"/></svg></button></div></article>
+      <article class="card reveal" style="--d:90ms"><div class="ico" style="color:var(--green)"><svg class="i"><use href="#i-cols"/></svg></div><h3>My Notes vs Video</h3><p>Paste your notes, pick a video. See covered points, missed key points and possible mismatches, each with a source timestamp. Nothing changes until you approve it.</p><div class="cta-row" style="margin-top:22px"><button class="btn btn-ghost btn-sm" data-open-tab="notes">Try it live <svg class="i"><use href="#i-arrow"/></svg></button></div></article>
+      <article class="card reveal" style="--d:180ms"><div class="ico" style="color:var(--amber)"><svg class="i"><use href="#i-bookmark"/></svg></div><h3>Remember the Missing Explanation</h3><p>No source yet? Save the unresolved reference. After each new upload is indexed, a worker checks it and sends an in-app notification, once, when a candidate appears.</p><div class="cta-row" style="margin-top:22px"><button class="btn btn-ghost btn-sm" data-open-tab="remember">Try it live <svg class="i"><use href="#i-arrow"/></svg></button></div></article>
+    </div>
+    <article class="card reveal" style="margin-top:clamp(14px,1.8vw,22px);display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;border-color:rgba(123,140,255,.4);background:var(--grad-soft)" id="map-card">
+      <div class="ico" style="margin:0;color:var(--violet)"><svg class="i"><use href="#i-graph"/></svg></div>
+      <div><span class="pill cyan">For teams and educators</span><h3 style="margin-top:10px">Library Map: see what your recordings assume but never explain</h3><p>Every confirmed reference becomes a link. Get a dependency map, the order to watch things in, and a gaps report for instructors and teams: the exact explanations nobody has recorded yet.</p></div>
+      <button class="btn btn-primary btn-sm" data-open-tab="map">Open the map <svg class="i"><use href="#i-arrow"/></svg></button>
+    </article>
+    <article class="card reveal" style="margin-top:clamp(14px,1.8vw,22px);display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;border-color:rgba(165,139,255,.45);background:linear-gradient(115deg,rgba(165,139,255,.16),rgba(70,224,255,.08))" id="promise-card">
+      <div class="ico" style="margin:0;color:var(--violet)"><svg class="i"><use href="#i-flag"/></svg></div>
+      <div><span class="pill cyan">New</span><h3 style="margin-top:10px">Follow-up Tracker: make sure every "next video" gets made</h3><p>"We'll cover that in the next video." CloudNote AI catches the follow-up, watches every later upload, tells you once when it is covered, and lists the follow-ups no video has covered. In our search of existing note and meeting tools we found nothing that does this.</p></div>
+      <a class="btn btn-primary btn-sm" href="index.html">Open the app <svg class="i"><use href="#i-arrow"/></svg></a>
+    </article>
+  </div>
+</section>
+
+<!-- ================= DEMO ================= -->
+<section class="section section-alt" id="demo">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">04</span>Live demo</span>
+      <h2 class="h2 wide">Don't read about it. <span class="serif">Use it.</span></h2>
+      <p class="lede">A working miniature of the workspace, running entirely in your browser. Play the tutorial, click a transcript line, confirm a link, then upload tomorrow's video and watch an old question get answered.</p>
+    </div>
+    <div class="tour-bar reveal"><button class="btn btn-primary" id="tour-go" type="button"><svg class="i"><use href="#i-play"/></svg> Play the 60-second story</button><span class="hint" id="tour-hint">Watch the whole flow run by itself. Click anywhere to take over.</span></div>
+    <div class="ws reveal" id="ws" aria-label="CloudNote AI interactive demo workspace">
+      <div class="ws-glow"></div>
+      <noscript><p style="padding:30px">The interactive demo needs JavaScript.</p></noscript>
+    </div>
+    <p class="note reveal"><svg class="i"><use href="#i-info"/></svg><span>Illustrative demo. Transcripts, timestamps and scores are small invented examples that mirror the project's worked examples. They are not measured results. The real app uses Bedrock embeddings and a Bedrock model instead of the keyword matching and precomputed notes used here.</span></p>
+  </div>
+</section>
+
+<!-- ================= PIPELINE ================= -->
+<section class="section" id="pipeline">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">05</span>How it works</span>
+      <h2 class="h2 wide">Five steps from <span class="serif">upload</span> to answer.</h2>
+      <p class="lede">The core pipeline behind every feature: the same login, transcripts, chunk IDs, timestamps and ownership checks.</p>
+    </div>
+    <div class="pipe reveal">
+      <div class="steps" id="steps" role="tablist" aria-label="Pipeline steps" aria-orientation="vertical"></div>
+      <div class="pane" id="pane" role="tabpanel" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ROADMAP / AUDIENCE ================= -->
+<section class="section" id="roadmap">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">06</span>Use cases and roadmap</span>
+      <h2 class="h2 wide">Who it's for, and <span class="serif">where it goes.</span></h2>
+    </div>
+    <div class="grid g4 aud" id="aud"></div>
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.6rem;letter-spacing:-0.02em;margin:clamp(44px,6vw,80px) 0 20px">Future enhancements</h3>
+    <div class="grid g4 road" id="road"></div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="section section-alt" id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow"><span class="num">07</span>Straight answers</span>
+      <h2 class="h2 wide">What it is, and what it <span class="serif">isn't.</span></h2>
+    </div>
+    <div class="faq reveal" id="faq-list"></div>
+  </div>
+</section>
+
+<section class="foot-cta">
+  <div class="wrap">
+    <h2 class="reveal">Stop re-watching. Start <span class="serif grad-text">finding.</span></h2>
+    <div class="cta-row reveal"><a class="btn btn-primary" href="#demo">Open the live demo <svg class="i"><use href="#i-arrow"/></svg></a><button class="btn btn-ghost" type="button" data-pal>Search this site <kbd>Ctrl K</kbd></button></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top"><svg><use href="#logo"/></svg><span>Cloud<b>Note</b> AI</span></a>
+        <p>Turn long videos into notes you can search, and recordings that point to each other.</p>
+      </div>
+      <div><h5>Product</h5><ul><li><a href="#features">Features</a></li><li><a href="#demo">Live demo</a></li><li><a href="#pipeline">How it works</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h5>More</h5><ul><li><a href="project.html">Project details</a></li><li><a href="project.html#research">Research</a></li><li><a href="project.html#team">Team</a></li></ul></div>
+    </div>
+    <div class="legal"><span>Engineering Capstone Project, Dept. of CSE, KL University.</span><span>Proposed implementation. Demo data is illustrative.</span></div>
+  </div>
+</footer>
+
+<!-- command palette -->
+<div class="pal" id="pal" role="dialog" aria-modal="true" aria-label="Search the site" aria-hidden="true">
+  <div class="pal-box">
+    <div class="pal-in"><svg class="i"><use href="#i-search"/></svg><input id="pal-q" type="text" placeholder="Search sections, papers, features, answers" autocomplete="off" aria-controls="pal-list" aria-label="Search the site"><kbd>Esc</kbd></div>
+    <div class="pal-list" id="pal-list" role="listbox"></div>
+    <div class="pal-foot"><span>Up and down to move, Enter to open</span><span>Ranked by the same TF-IDF engine as the demo</span></div>
+  </div>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<button class="to-top" id="to-top" type="button" aria-label="Back to top"><svg class="i" style="width:18px;height:18px"><use href="#i-up"/></svg></button>
+
+<script src="app.js" defer></script>
+</body>
+</html>
