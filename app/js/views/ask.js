@@ -1,5 +1,5 @@
 import { h, icon, clear, toast } from "../ui.js";
-import { momentCard } from "./common.js";
+import { momentCard, knowMore } from "./common.js";
 import { markDone } from "./home.js";
 
 const SAMPLES = ["Which port should the application use?", "How do I restart the service?", "Where was the firewall rule configured?"];
@@ -14,7 +14,7 @@ export async function askView({ view, api, app, q }) {
     try {
       const r = await api.get("/search", { q: text });
       clear(out);
-      if (!r.results.length) out.append(h("div", { class: "nomatch" }, h("b", null, "Nothing close enough. "), "Try other words, or add the video that covers it."));
+      if (!r.results.length) out.append(h("div", { class: "nomatch" }, h("b", null, "Nothing close enough. "), "Try other words, or add the video that covers it."), knowMore({ topic: text }));
       else { out.append(h("div", { class: "hint" }, `${r.results.length} closest moment${r.results.length === 1 ? "" : "s"}. Click a timestamp to jump there.`)); r.results.forEach((x) => out.append(momentCard(x))); }
     } catch (e) { clear(out); toast(e.message, "err"); }
   }

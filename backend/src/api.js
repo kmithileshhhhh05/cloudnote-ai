@@ -5,6 +5,7 @@ import { parseOrThrow, saveTranscript, seedSamples } from "./pipeline.js";
 import { candidatesFor, buildMap, b64ToVec } from "./core/library.js";
 import { compareNotes } from "../../shared/nlp.js";
 import { askNotes } from "./core/notesask.js";
+import { explainTopic } from "./core/explain.js";
 
 const trunc = (s, n = 220) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "..." : s);
 const mediaExt = (name) => (/\.([a-z0-9]{2,5})$/i.exec(name || "") || [])[1]?.toLowerCase() || "";
@@ -153,6 +154,26 @@ async function route(ctx, req) {
     const only = (body || {}).video;
     if (only !== undefined && only !== null && !ID_RE.test(String(only))) throw bad("Bad video id.");
     return askNotes(q, await loadNoteItems(ctx, S, only || null), ctx.llm);
+  }
+
+  // ----- know more: general AI explanation of a topic the library does not cover -----
+  if (a === "explain" && !b && M === "POST") {
+    const topic = String((body || {}).topic || "").trim().slice(0, 200);
+    const chunkId = String((body || {}).chunkId || "");
+    let context = "";
+    if (chunkId) {
+      if (!CHUNK_RE.test(chunkId)) throw bad("Bad excerpt id.");
+      const ch = (await S.library()).byId.get(chunkId);
+      if (!ch) throw notFound("That excerpt was not found.");
+      context = String(ch.text || "").slice(0, 600);
+    }
+    if (!topic && !context) throw bad("Say which topic to explain.");
+    if (!ctx.llm) throw new HttpError(503, "AI explanations are not available on this server.");
+    let out;
+    try { out = await explainTopic({ topic, context }, ctx.llm); }
+    catch (e) { console.error("explain failed:", String((e && e.message) || e).slice(0, 200)); throw new HttpError(502, "The AI is busy right now. Try again in a moment."); }
+    if (!out) throw bad("The AI could not tell which topic this is. Try asking about it directly.");
+    return { topic: out.topic, text: out.text, source: "ai-general" };
   }
 
   // ----- all notes -----

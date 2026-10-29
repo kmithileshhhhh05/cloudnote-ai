@@ -1,4 +1,5 @@
-import { h, icon, fmtTime } from "../ui.js";
+import { h, icon, fmtTime, clear } from "../ui.js";
+import { api } from "../api.js";
 
 export const STATUS = {
   awaiting_upload: ["dim", "Waiting for upload"], transcribing: ["amber", "Transcribing"], processing: ["amber", "Analyzing"], ready: ["green", "Ready"], failed: ["red", "Failed"],
@@ -35,4 +36,25 @@ export function copyText(text, ok, toast) {
 export function downloadText(name, text, mime = "text/markdown") {
   const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: mime })), download: name });
   document.body.append(a); a.click(); a.remove();
+}
+
+/** "Know more" button: a general AI explanation for a topic none of the user's videos covers. */
+export function knowMore({ topic = "", chunkId = "", label = "Know more about this topic" } = {}) {
+  const out = h("div", { class: "km-out", "aria-live": "polite" });
+  const btn = h("button", { class: "btn btn-ghost btn-xs km-btn", type: "button", onclick: go }, icon("spark"), " " + label);
+  async function go() {
+    if (out.childNodes.length) { clear(out); btn.setAttribute("aria-expanded", "false"); return; }
+    btn.disabled = true; out.append(h("div", { class: "hint" }, "Asking the AI..."));
+    try {
+      const r = await api.post("/explain", chunkId ? { chunkId, topic } : { topic });
+      clear(out);
+      out.append(h("section", { class: "km-panel" },
+        h("div", { class: "km-h" }, h("b", null, r.topic || topic || "Explanation"), h("span", { class: "pill violet" }, "General AI explanation")),
+        ...String(r.text).split(/\n\s*\n/).map((para) => h("p", null, para.trim())),
+        h("p", { class: "hint" }, "Not from your videos. AI-generated background knowledge, so check important facts.")));
+      btn.setAttribute("aria-expanded", "true");
+    } catch (e) { clear(out); out.append(h("div", { class: "hint km-err" }, e.message)); }
+    btn.disabled = false;
+  }
+  return h("div", { class: "km" }, btn, out);
 }

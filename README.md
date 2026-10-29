@@ -13,6 +13,7 @@ Cloud-based intelligent video note extraction and semantic search platform. Uplo
 - **Notes**: summary, key points, action items, decisions, written by an AI model (see [AI models](#ai-models)), otherwise by a built-in extractive method. Every item links to its source moment.
 - **Ask your notes**: AI answers built only from your notes, with numbered citations; no answer is shown when the notes do not cover the question.
 - **Ask your library**: semantic search with Bedrock Titan embeddings when enabled, otherwise keyword search. Answers are playable moments.
+- **Know more**: when a reference, follow-up or question is not covered by any of your videos, one click gives a short general AI explanation of the topic, labelled as background knowledge rather than content from your library.
 - **Video Context Recovery**: finds "as discussed earlier" style references and suggests where your other videos explain them.
 - **Remember the Missing Explanation**: unresolved references are re-checked after every new video; you get one notification when something matches.
 - **Notes vs Video**: compare your own notes with the video's key points (covered, possible mismatch, missed).

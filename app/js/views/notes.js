@@ -1,6 +1,6 @@
 import { h, icon, clear, toast, fmtTime, fmtDate } from "../ui.js";
 import { cover, skeleton } from "../art.js";
-import { copyText, downloadText } from "./common.js";
+import { copyText, downloadText, knowMore } from "./common.js";
 
 const SECTIONS = [["points", "Key points"], ["actions", "Action items"], ["decisions", "Decisions"]];
 const SUGGEST = ["What did we decide?", "What are the action items?", "Which port should the application use?"];
@@ -28,8 +28,8 @@ export async function notesView({ view, api }) {
       const r = await api.post("/notes/ask", { q }); if (!alive) return; clear(answer);
       const src = r.results.map((x) => h("li", null, h("a", { href: `#/v/${x.videoId}` + (x.start != null ? `?t=${Math.floor(x.start)}` : "") }, h("b", null, x.title), " ", h("span", { class: "pill dim" }, x.label), x.start != null ? [" ", h("span", { class: "ts" }, fmtTime(x.start))] : null), h("p", null, x.text)));
       if (r.answer) answer.append(h("section", { class: "panel nans" }, h("div", { class: "panel-h" }, h("h2", null, "Answer"), h("span", { class: "pill cyan" }, "AI, from your notes")), h("p", { class: "nans-t" }, r.answer), h("div", { class: "hint" }, "Sources"), h("ul", { class: "nsrc" }, ...src), h("p", { class: "hint" }, "Generated from your notes only. Check the linked moments before relying on it.")));
-      else if (r.results.length) answer.append(h("section", { class: "panel nans" }, h("div", { class: "panel-h" }, h("h2", null, r.source === "ai" ? "No direct answer, closest notes" : "Matching notes"), h("span", { class: "pill dim" }, r.source === "ai" ? "AI found no answer" : "keyword search")), h("ul", { class: "nsrc" }, ...src), r.source === "keyword" ? h("p", { class: "hint" }, "AI answers are not available here, so these are the best keyword matches.") : null));
-      else answer.append(h("section", { class: "panel nans" }, h("p", { class: "nans-t" }, items.length ? "Nothing in your notes matches that question." : "You have no notes yet. Add a video first.")));
+      else if (r.results.length) answer.append(h("section", { class: "panel nans" }, h("div", { class: "panel-h" }, h("h2", null, r.source === "ai" ? "No direct answer, closest notes" : "Matching notes"), h("span", { class: "pill dim" }, r.source === "ai" ? "AI found no answer" : "keyword search")), h("ul", { class: "nsrc" }, ...src), r.source === "keyword" ? h("p", { class: "hint" }, "AI answers are not available here, so these are the best keyword matches.") : null, knowMore({ topic: q, label: "Not in your notes? Know more about this topic" })));
+      else answer.append(h("section", { class: "panel nans" }, h("p", { class: "nans-t" }, items.length ? "Nothing in your notes matches that question." : "You have no notes yet. Add a video first."), knowMore({ topic: q })));
     } catch (e) { clear(answer); toast(e.message, "err"); }
     askBtn.disabled = false; askBtn.textContent = "Ask";
   }
