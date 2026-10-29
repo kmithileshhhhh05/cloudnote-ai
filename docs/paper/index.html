@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CloudNote AI: Cross-Video Context Recovery and Grounded Note Extraction for Recorded Lectures</title>
+<style>
+  @page { size: Letter; margin: 0.75in 0.62in 0.9in 0.62in; }
+  body { font: 9.6pt/1.32 "Times New Roman", Times, serif; color: #000; margin: 0; }
+  .title { text-align: center; font-size: 17pt; font-weight: bold; margin: 0 0 10pt; line-height: 1.2; }
+  .authors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; text-align: center; font-size: 9pt; margin-bottom: 12pt; }
+  .authors b { font-size: 10pt; }
+  .abstract, .terms { font-size: 9pt; text-align: justify; margin: 0 0 6pt; }
+  .abstract b, .terms b { font-style: italic; }
+  .cols { column-count: 2; column-gap: 0.24in; text-align: justify; hyphens: auto; }
+  h2 { font-size: 10pt; font-weight: bold; text-transform: uppercase; margin: 10pt 0 4pt; break-after: avoid; }
+  h3 { font-size: 9.6pt; font-weight: bold; font-style: italic; margin: 7pt 0 3pt; break-after: avoid; }
+  p { margin: 0 0 5pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; margin: 4pt 0 7pt; break-inside: avoid; }
+  caption { font-size: 8pt; font-weight: bold; text-transform: uppercase; margin-bottom: 3pt; line-height: 1.25; }
+  th, td { border-top: 0.6pt solid #000; border-bottom: 0.6pt solid #000; padding: 1.6pt 3pt; text-align: left; vertical-align: top; }
+  th { font-weight: bold; }
+  td.n, th.n { text-align: right; }
+  .refs { font-size: 7.8pt; line-height: 1.28; }
+  .refs p { margin: 0 0 2.5pt; padding-left: 16pt; text-indent: -16pt; }
+  ul, ol { margin: 0 0 5pt; padding-left: 14pt; }
+  li { margin: 0 0 2pt; }
+  code { font: 8pt "Courier New", monospace; }
+</style>
+</head>
+<body>
+
+<div class="title">CloudNote AI: Cross-Video Context Recovery and Grounded Note Extraction for Recorded Lectures on Serverless AWS</div>
+
+<div class="authors">
+  <div><b>K. Mithilesh Reddy</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Student ID: 2320030330</div>
+  <div><b>Nithin</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Student ID: 2320030186</div>
+  <div><b>Sargu Sai Chetan</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Student ID: 2320030348</div>
+</div>
+
+<p class="abstract"><b>Abstract</b>&nbsp;This study examines how a library of recorded lectures can be made to "remember itself": when one recording says "as we discussed earlier" or "in the next video", can a system find, or keep looking for, the recording that actually explains it? CloudNote AI is a web application that transcribes uploaded media with Amazon Transcribe, writes timestamped notes, answers questions only from those notes with numbered citations, detects backward references and forward follow-ups across videos, and re-checks unresolved references after every new upload. A separate, clearly labelled "Know more" function supplies general AI background when no video covers a topic. The system is deployed on a serverless AWS stack and was exercised against the live deployment. In a small live benchmark, transcript import to AI notes took a median of 4.6 s (n = 3) and an 11-s speech clip took a median of 17.3 s from upload to finished notes (n = 3). Ask-your-notes answered all five questions covered by the notes with citations and declined four of five off-topic questions; the fifth fell back to keyword search after a free-tier rate limit. Because the project's AWS account currently has a Bedrock quota of zero, the deployed language model is a third-party fallback (Groq), and semantic search is disabled. The demonstration library is illustrative, and the accuracy of reference recovery has not yet been measured on real lecture series. The paper therefore reports a working, inspectable system and its engineering trade-offs, not validated learning outcomes.</p>
+
+<p class="terms"><b>Index Terms</b>&nbsp;lecture video retrieval, speech recognition, note extraction, retrieval-augmented generation, citation grounding, serverless computing, cross-reference detection.</p>
+
+<div class="cols">
+
+<h2>I. Introduction</h2>
+<p>Students increasingly learn from series of recorded lectures, tutorials and meetings. A single recording is rarely self-contained: speakers say "use the database settings from the earlier tutorial" or "we will cover indexes in the next video". When the viewer does not remember, or never watched, the earlier recording, the reference becomes a dead end. Search tools index each video separately and answer the question "where was this word said?", not "which recording explains what this one assumes?".</p>
+<p>CloudNote AI addresses this gap with three ideas. First, every recording is converted into timestamped moments so that any note, answer or link can point to a playable position. Second, references between recordings are detected explicitly and treated as objects with a state: open, linked, or remembered for later checking. Third, AI-generated content is separated by provenance: answers grounded in the user's notes carry citations, and general explanations are labelled as background knowledge.</p>
+<p>The paper makes four contributions. (1) It describes an end-to-end serverless pipeline from upload to transcription, notes and retrieval. (2) It presents a cross-video reference engine with a "Remember the Missing Explanation" mechanism that re-checks unresolved references after each new upload; in the tools we reviewed we found none that does this, although we do not claim that none exists. (3) It describes grounded question answering with citation validation and abstention, plus a separate general-knowledge path. (4) It reports the first real deployment honestly, including provider quotas, fallbacks and measured behaviour.</p>
+
+<h2>II. Related Work</h2>
+<p>Extractive summarisation selects representative sentences rather than generating new text; graph-based centrality methods such as TextRank [1] remain a common unsupervised baseline. Term weighting with TF-IDF and cosine similarity [2] provides transparent lexical retrieval, while sentence embeddings such as Sentence-BERT [3] capture meaning beyond shared words. CloudNote AI uses lexical retrieval by default and supports 512-dimensional Amazon Titan embeddings when available.</p>
+<p>Retrieval-augmented generation conditions a language model on retrieved passages to improve factual grounding [4]. Language models can still produce fluent but unsupported statements [5], which motivates requiring citations and checking them [6]. CloudNote AI follows this line: answers must cite numbered passages, and uncited answers are discarded rather than shown.</p>
+<p>From a learning perspective, multimedia instruction research recommends reducing extraneous load, for example by signalling and by segmenting material [7]. Timestamped notes, a moments timeline and explicit links between recordings are intended as such signals; their educational effect has not been tested in this work.</p>
+
+<h2>III. System Design</h2>
+<h3>A. Architecture</h3>
+<p>The system is fully serverless (Table I). A vanilla JavaScript single-page application is served from a private S3 bucket through CloudFront, which also forwards <code>/api/*</code> to an HTTP API. A Cognito JWT authoriser rejects unauthenticated requests before any function runs. All application state lives in one DynamoDB table keyed by user, so each user only ever reads their own library. Media is uploaded directly to a private S3 bucket using a presigned PUT and played back through short-lived signed URLs.</p>
+<table>
+  <caption>Table I<br>Deployed Components (AWS us-east-1)</caption>
+  <tr><th>Concern</th><th>Service</th><th>Role</th></tr>
+  <tr><td>Delivery</td><td>S3 + CloudFront</td><td>Site over HTTPS; routes API calls</td></tr>
+  <tr><td>Identity</td><td>Cognito</td><td>Accounts, JWT validation at the gateway</td></tr>
+  <tr><td>API</td><td>HTTP API + Lambda</td><td>All requests, 29-s gateway limit</td></tr>
+  <tr><td>Jobs</td><td>Lambda worker</td><td>Notes, indexing, reference checks</td></tr>
+  <tr><td>State</td><td>DynamoDB</td><td>Single table, partitioned by user</td></tr>
+  <tr><td>Speech</td><td>Transcribe + EventBridge</td><td>Job completion triggers the worker</td></tr>
+  <tr><td>Language</td><td>Bedrock, then fallbacks</td><td>Notes, answers, explanations</td></tr>
+</table>
+<h3>B. Processing Pipeline</h3>
+<p>After an upload, the API starts a Transcribe job named <code>cn.&lt;user&gt;.&lt;video&gt;.&lt;attempt&gt;</code>. An EventBridge rule matches completed or failed jobs with that prefix and invokes the worker, which parses the output into timestamped chunks. Users may instead import SRT, WebVTT, Transcribe JSON or plain text, which skips transcription. The worker then generates notes and updates the user's index and reference state.</p>
+<h3>C. Note Generation</h3>
+<p>For the model path, chunks are numbered and batched into prompts of at most about 5,500 words. The model returns a summary, key points, action items and decisions, each tied to a chunk number so that every item links to its moment. If no model answers, an extractive fallback ranks chunks by lexical centrality, keeps at most one key point per equal-length segment of the recording (up to eight), builds a three-sentence summary from the most central chunks, and finds action items and decisions with keyword patterns. The video header states which method produced the notes.</p>
+
+<h2>IV. Cross-Video Context Recovery</h2>
+<h3>A. Detecting References</h3>
+<p>Six regular-expression patterns detect backward references (for example "as we discussed earlier", "from the previous tutorial") and seven detect forward follow-ups ("in the next video", "we will cover that later"). Pattern matching was chosen over a learned classifier because it is transparent, cheap and easy to audit; its recall on unconstrained speech is unknown and is listed as future work.</p>
+<h3>B. Finding Candidate Sources</h3>
+<p>For each reference, a query is formed from the referring chunk and the following chunk, with words that describe the act of referring (such as "earlier", "tutorial", "video") removed so that the query describes the topic. Candidates come only from the user's other recordings; forward follow-ups consider only later recordings. In lexical mode a candidate must reach a TF-IDF cosine score of 0.30. In semantic mode the score combines embedding similarity with a 0.2 lexical weight and must reach 0.50. Scores mark candidates, not proof: nothing is linked until the user accepts a source, picks one manually, or chooses to remember the reference.</p>
+<h3>C. Remembering Missing Explanations</h3>
+<p>A remembered reference becomes a pending record. After every new recording is indexed, pending references are re-scored against it, and a match produces a single notification, de-duplicated so that the same pair is never announced twice. Accepted links, open gaps and pending follow-ups feed a library map that draws dependencies between recordings, proposes a watch order (sources before the recordings that rely on them), and produces a copyable gaps report.</p>
+
+<h2>V. Grounded Answers and General Explanations</h2>
+<h3>A. Ask Your Notes</h3>
+<p>Questions are answered from the user's notes, not from the open web. Keyword retrieval selects up to 25 passages, which are numbered in the prompt. The model is instructed to use only those passages, cite them as [n], stay under 90 words, and reply <code>NOT_IN_NOTES</code> when the passages do not contain the answer. The server normalises citation styles (for example <code>[1, 3]</code>, <code>【1】</code> and <code>【1†L1-L2】</code>, all observed from the deployed model) and discards any answer without a valid citation. The interface lists the cited sources with links to their moments.</p>
+<h3>B. Know More</h3>
+<p>When a reference has no candidate source, or a question finds nothing, the user can request a short general explanation. A separate endpoint asks the model for a topic name and at most 160 words of background, inferring the concept from the referring sentence when needed. The result is labelled "General AI explanation, not from your videos". Keeping this path separate preserves the guarantee that cited answers come only from the user's material.</p>
+
+<h2>VI. Deployment and Model Fallbacks</h2>
+<p>The intended language model is Amazon Nova Lite on Bedrock with Titan text embeddings. On first deployment the account's Bedrock quota was zero tokens per day for every model, a limit that is not adjustable through Service Quotas. The backend therefore tries providers in order: Bedrock, Groq (<code>openai/gpt-oss-120b</code> [8]) and Google Gemini, then the extractive fallback. Each provider has a time budget: 12 s per provider in the API, which must answer within API Gateway's 29-s limit, and 60 s or 240 s in the background worker. Bedrock resumes automatically once its quota is raised. Table II lists the faults found during the first deployment; each was fixed or worked around.</p>
+<table>
+  <caption>Table II<br>Faults Found During the First Real Deployment</caption>
+  <tr><th>Symptom</th><th>Cause and resolution</th></tr>
+  <tr><td>Sign-up failed</td><td>Packaging ignored a global code path, so functions shipped without code; set per function</td></tr>
+  <tr><td>Writes failed</td><td>Missing <code>dynamodb:UpdateItem</code> permission; added</td></tr>
+  <tr><td>Transcription refused</td><td>Free account plan excludes Transcribe; upgraded (credits retained)</td></tr>
+  <tr><td>Notes extractive</td><td>Bedrock quota 0; provider fallback chain added</td></tr>
+  <tr><td>Gemini unusable</td><td>Older models retired for new keys; current model overloaded</td></tr>
+  <tr><td>Answers dropped</td><td>Unrecognised citation formats; parser extended</td></tr>
+</table>
+
+<h2>VII. Evaluation</h2>
+<h3>A. Method</h3>
+<p>All measurements were taken on 29 October 2026 against the live deployment in AWS us-east-1, using one temporary account that was deleted afterwards. Requests were sent sequentially from a client machine in India, so the timings include intercontinental network latency. The library held the four illustrative sample recordings, three copies of a short imported transcript and three uploads of an 11-s speech clip produced with macOS text-to-speech. Notes and answers were produced by the Groq fallback. Semantic search was disabled, so search was lexical. Sample sizes are small, and the results describe this deployment on this day.</p>
+<h3>B. Latency</h3>
+<table>
+  <caption>Table III<br>Observed End-to-End Latency</caption>
+  <tr><th>Operation</th><th class="n">n</th><th class="n">Median</th><th class="n">Range</th></tr>
+  <tr><td>Transcript import to AI notes</td><td class="n">3</td><td class="n">4.6 s</td><td class="n">4.4 to 4.9 s</td></tr>
+  <tr><td>Upload, Transcribe, AI notes</td><td class="n">3</td><td class="n">17.3 s</td><td class="n">8.4 to 21.2 s</td></tr>
+  <tr><td>Ask your notes</td><td class="n">10</td><td class="n">2.5 s</td><td class="n">2.0 to 21.9 s</td></tr>
+  <tr><td>Know more explanation</td><td class="n">5</td><td class="n">4.1 s</td><td class="n">2.3 to 15.0 s</td></tr>
+  <tr><td>Library search (lexical)</td><td class="n">10</td><td class="n">1.0 s</td><td class="n">0.9 to 1.6 s</td></tr>
+</table>
+<p>All six recordings reached the ready state with model-written notes. The transcript of the synthetic clip matched the spoken text except that "DynamoDB" was rendered as "Dynamo DB", and in earlier test runs of the same clip the sentence "In the next video, we will explain global secondary indexes" was detected as a follow-up. Upload times vary with Transcribe job scheduling. The long tails for questions and explanations are dominated by the language-model providers: the 21.9-s question is explained below, while the cause of the 15.0-s explanation was not isolated.</p>
+<h3>C. Grounding and Abstention</h3>
+<table>
+  <caption>Table IV<br>Ask-Your-Notes Behaviour (n = 10)</caption>
+  <tr><th>Question type</th><th>Outcome</th></tr>
+  <tr><td>Covered by notes (5)</td><td>5 AI answers, each with valid citations</td></tr>
+  <tr><td>Not covered (5)</td><td>4 declined by the model; 1 keyword fallback</td></tr>
+</table>
+<p>For the five covered questions, for example "Which port does the application use and why?", every answer cited at least one passage and agreed with the sample notes when we read it. Four of the five off-topic questions, such as "What is the capital of France?", were correctly declined. For the fifth, Groq returned HTTP 429 (free-tier rate limit) and Gemini timed out, so the system fell back to keyword search after 21.9 s and showed matching notes without an AI answer. This is the designed degraded behaviour, but it shows that free-tier providers are not dependable at burst load.</p>
+
+<h2>VIII. Limitations, Privacy and Ethics</h2>
+<p>The main validity limit is that reference recovery has not been evaluated on real lecture series with labelled ground truth. The sample library was written to demonstrate the features, so success on it shows that the pipeline works, not that it generalises. The detection patterns are English-only although transcription supports Hindi, Telugu and other languages. Lexical search misses paraphrases until embeddings are enabled. The per-container in-memory index suits libraries of a few hundred recordings.</p>
+<p>While a third-party provider is in use, transcript text leaves AWS for that provider, and users should not upload confidential recordings. The deployment allows open sign-up without email verification, and has no password reset; a production service needs restricted sign-up, verification, budget alarms and abuse controls. Generated notes and explanations can be wrong, which is why every grounded item links to its source moment and general explanations are labelled.</p>
+
+<h2>IX. Future Work</h2>
+<p>Planned work includes: a labelled dataset of references from several real lecture series to measure detection recall and candidate precision; enabling Bedrock and Titan embeddings and tuning the semantic thresholds (0.50 for references, 0.33 for questions) on that data; multilingual reference patterns; and a user study measuring whether linked recordings and remembered references reduce the time students need to recover missing context.</p>
+
+<h2>X. Conclusion</h2>
+<p>CloudNote AI shows that a serverless pipeline can turn recordings into timestamped notes, citation-checked answers and explicit links between videos, and can keep watching for explanations that do not exist yet. The live system works end to end, with interactive operations typically completing in a few seconds. Its central contribution is an integrated, inspectable prototype of cross-video context recovery. Measured accuracy on real lecture series, and the effect on learning, remain open questions for the next stage.</p>
+
+<h2>References</h2>
+<div class="refs">
+<p>[1] R. Mihalcea and P. Tarau, "TextRank: Bringing order into texts," in <i>Proc. Conf. Empirical Methods in Natural Language Processing (EMNLP)</i>, 2004, pp. 404&ndash;411.</p>
+<p>[2] G. Salton and C. Buckley, "Term-weighting approaches in automatic text retrieval," <i>Information Processing &amp; Management</i>, vol. 24, no. 5, pp. 513&ndash;523, 1988.</p>
+<p>[3] N. Reimers and I. Gurevych, "Sentence-BERT: Sentence embeddings using Siamese BERT-networks," in <i>Proc. EMNLP-IJCNLP</i>, 2019, pp. 3982&ndash;3992.</p>
+<p>[4] P. Lewis <i>et al.</i>, "Retrieval-augmented generation for knowledge-intensive NLP tasks," in <i>Advances in Neural Information Processing Systems</i>, vol. 33, 2020, pp. 9459&ndash;9474.</p>
+<p>[5] Z. Ji <i>et al.</i>, "Survey of hallucination in natural language generation," <i>ACM Computing Surveys</i>, vol. 55, no. 12, art. 248, 2023.</p>
+<p>[6] T. Gao, H. Yen, J. Yu, and D. Chen, "Enabling large language models to generate text with citations," in <i>Proc. EMNLP</i>, 2023.</p>
+<p>[7] R. E. Mayer and R. Moreno, "Nine ways to reduce cognitive load in multimedia learning," <i>Educational Psychologist</i>, vol. 38, no. 1, pp. 43&ndash;52, 2003.</p>
+<p>[8] OpenAI, "gpt-oss-120b &amp; gpt-oss-20b model card," Aug. 2025.</p>
+<p>[9] Amazon Web Services, "Amazon Transcribe developer guide," [Online]. Available: https://docs.aws.amazon.com/transcribe/. Accessed: Oct. 29, 2026.</p>
+<p>[10] Amazon Web Services, "Amazon Bedrock user guide," [Online]. Available: https://docs.aws.amazon.com/bedrock/. Accessed: Oct. 29, 2026.</p>
+<p>[11] CloudNote AI Project Team, "CloudNote AI user manual," ed. 2, Oct. 2026. Source code: https://github.com/kmithileshhhhh05/cloudnote-ai.</p>
+</div>
+
+</div>
+</body>
+</html>
