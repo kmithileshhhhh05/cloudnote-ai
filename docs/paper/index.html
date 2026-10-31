@@ -7,7 +7,7 @@
   @page { size: Letter; margin: 0.75in 0.62in 0.9in 0.62in; }
   body { font: 10pt/1.24 "Times New Roman", Times, serif; color: #000; margin: 0; }
   .title { text-align: center; font-size: 11.5pt; font-weight: bold; margin: 0 0 10pt; line-height: 1.2; }
-  .authors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; text-align: center; font-size: 9pt; margin-bottom: 12pt; }
+  .authors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10pt 8pt; text-align: center; font-size: 9pt; margin-bottom: 12pt; }
   .authors b { font-size: 10pt; }
   .abstract, .terms { font-size: 9pt; text-align: justify; margin: 0 0 6pt; }
   .abstract b, .terms b { font-style: italic; }
@@ -32,9 +32,10 @@
 <div class="title">CloudNote AI: Cross-Video Context Recovery and Grounded Note Extraction for Recorded Lectures</div>
 
 <div class="authors">
-  <div><b>K. Mithilesh Reddy</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Email/Student ID: 2320030330</div>
-  <div><b>Nitin Tulugu</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Email/Student ID: 2320030186</div>
-  <div><b>Sargu Sai Chetan</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>Email/Student ID: 2320030348</div>
+  <div><b>K. Mithilesh Reddy</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>2320030330@klh.edu.in</div>
+  <div><b>Nitin Tulugu</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>2320030186@klh.edu.in</div>
+  <div><b>Sargu Sai Chetan</b><br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India<br>2320030348@klh.edu.in</div>
+  <div><b>Dr. G. Neelima</b><br>Assistant Professor<br>Department of Computer Science and Engineering<br>KL University<br>Hyderabad, India</div>
 </div>
 
 <p class="abstract"><b>Abstract</b>&nbsp;This study examines how a library of recorded lectures can be made to "remember itself": when one recording says "as we discussed earlier" or "in the next video", can a system find, or keep looking for, the recording that actually explains it? CloudNote AI is a web application that transcribes uploaded media with Amazon Transcribe, writes timestamped notes, answers questions only from those notes with numbered citations, detects backward references and forward follow-ups across videos, and re-checks unresolved references after every new upload. A separate, clearly labelled "Know more" function supplies general AI background when no video covers a topic. The system is deployed on a serverless AWS stack and was exercised against the live deployment. In a small live benchmark, transcript import to AI notes took a median of 4.6 s (n = 3) and an 11-s speech clip took a median of 17.3 s from upload to finished notes (n = 3). Ask-your-notes answered all five questions covered by the notes with citations and declined four of five off-topic questions; the fifth fell back to keyword search after a free-tier rate limit. Because the project's AWS account currently has a Bedrock quota of zero, the deployed language model is a third-party fallback (Groq), and semantic search is disabled. The demonstration library is illustrative, and the accuracy of reference recovery has not yet been measured on real lecture series. What follows is a report on a running system and the engineering choices behind it; learning gains were not measured.</p>
