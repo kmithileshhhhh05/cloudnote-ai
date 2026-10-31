@@ -18,10 +18,23 @@ export function passagesOf(items) {
   return out;
 }
 
+// Both prompts ask for two parts: ANSWER (only from the passages, cited) and BACKGROUND (a general textbook
+// explanation, uncited, shown separately and labelled as not from the user's material).
+const TWO_PARTS = "Reply in exactly this format:\nANSWER: a clear explanation in 3 to 6 sentences that directly answers the question, like a good tutor, using ONLY facts from the numbered passages, with the passage number in square brackets like [2] after each claim. Clean up spoken filler.\nBACKGROUND: 3 to 5 sentences of general textbook explanation of the topic (what it is, how it works, a tiny example if useful) for a student who needs the basics. No citations here.\nIf the passages say nothing relevant to the question, write ANSWER: NOT_IN_NOTES and still give BACKGROUND. Never invent facts, times or video names in ANSWER.";
+
+/** Split a two-part reply into the cited answer text and the general background. */
+export function splitReply(reply) {
+  const t = String(reply || "").replace(/\*\*(ANSWER|BACKGROUND):?\*\*:?/gi, "$1:");
+  const m = t.match(/BACKGROUND\s*:/i);
+  const ans = (m ? t.slice(0, m.index) : t).replace(/^\s*ANSWER\s*:\s*/i, "").trim();
+  const bg = m ? t.slice(m.index + m[0].length).trim().replace(/[【\[]\s*\d[^\]】]*[\]】]/g, "").trim().slice(0, 1200) : "";
+  return { ans, bg: bg || null };
+}
+
 export function askPrompt(question, ps) {
   return {
-    system: "You answer questions about a person's saved video notes. Use ONLY the numbered passages. If they do not contain the answer, reply exactly: NOT_IN_NOTES. Keep the answer under 90 words. After each claim cite the passage number in square brackets like [2]. Never invent facts, times or video names.",
-    user: `Passages:\n${ps.map((p, i) => `[${i + 1}] (${p.title}, ${p.label}) ${p.text}`).join("\n")}\n\nQuestion: ${question}\nAnswer:`,
+    system: "You answer questions about a person's saved video notes. " + TWO_PARTS,
+    user: `Passages:\n${ps.map((p, i) => `[${i + 1}] (${p.title}, ${p.label}) ${p.text}`).join("\n")}\n\nQuestion: ${question}`,
   };
 }
 
@@ -34,7 +47,7 @@ export function parseAnswer(reply, ps) {
   if (!text || /^NOT_IN_NOTES\b/i.test(text)) return null;
   const cites = [...new Set([...text.matchAll(/\[(\d{1,3})\]/g)].map((m) => Number(m[1])).filter((n) => n >= 1 && n <= ps.length))];
   if (!cites.length) return null; // an uncited answer cannot be verified, so it is not shown
-  return { text: text.slice(0, 900), cites };
+  return { text: text.slice(0, 1500), cites };
 }
 
 export async function askNotes(question, items, llm) {
@@ -48,11 +61,11 @@ export async function askNotes(question, items, llm) {
     try {
       const seen = new Set(hits.map((h) => h.id));
       const cand = hits.concat(ps.filter((p) => !seen.has(p.id)).slice(-Math.max(0, 25 - hits.length)));
-      const reply = await llm.complete(askPrompt(question, cand));
-      const a = parseAnswer(reply, cand);
-      if (!a && !/^\s*NOT_IN_NOTES/i.test(reply)) console.error("ask: reply had no usable citations:", String(reply).slice(0, 300));
-      if (a) return { query: question, answer: a.text, source: "ai", results: a.cites.map((n) => pub(cand[n - 1])) };
-      return { query: question, answer: null, source: "ai", results: hits.slice(0, 5).map(pub) };
+      const { ans, bg } = splitReply(await llm.complete(askPrompt(question, cand)));
+      const a = parseAnswer(ans, cand);
+      if (!a && !/^\s*NOT_IN_NOTES/i.test(ans)) console.error("ask: reply had no usable citations:", String(ans).slice(0, 300));
+      if (a) return { query: question, answer: a.text, background: bg, source: "ai", results: a.cites.map((n) => pub(cand[n - 1])) };
+      return { query: question, answer: null, background: bg, source: "ai", results: hits.slice(0, 5).map(pub) };
     } catch { /* fall through to keyword */ }
   }
   return { query: question, answer: null, source: "keyword", results: hits.slice(0, 6).map(pub) };
@@ -65,12 +78,12 @@ export async function answerFromMoments(question, moments, llm) {
   const fmt = (s) => (s == null ? "" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`);
   const ps = moments.map((m) => ({ ...m, label: fmt(m.start) || "moment" }));
   try {
-    const reply = await llm.complete({
-      system: "You answer a student's question about recorded lectures using ONLY the numbered transcript excerpts. Explain clearly in 2 to 5 sentences, like a tutor, cleaning up spoken filler. After each claim cite the excerpt number in square brackets like [2]. If the excerpts do not contain the answer, reply exactly: NOT_IN_NOTES. Never invent facts or times.",
-      user: `Transcript excerpts:\n${ps.map((p, i) => `[${i + 1}] (${p.title}, ${p.label}) ${p.text}`).join("\n")}\n\nQuestion: ${question}\nAnswer:`,
-    });
+    const { ans: reply, bg } = splitReply(await llm.complete({
+      system: "You answer a student's question about their recorded lectures; the numbered passages are transcript excerpts. " + TWO_PARTS,
+      user: `Transcript excerpts:\n${ps.map((p, i) => `[${i + 1}] (${p.title}, ${p.label}) ${p.text}`).join("\n")}\n\nQuestion: ${question}`,
+    }));
     const a = parseAnswer(reply, ps);
-    if (!a) return null;
-    return { text: a.text, cites: a.cites.map((n) => ps[n - 1]) };
+    if (!a) return bg ? { text: null, background: bg, cites: [] } : null;
+    return { text: a.text, background: bg, cites: a.cites.map((n) => ps[n - 1]) };
   } catch (e) { console.error("moment answer failed:", String((e && e.message) || e).slice(0, 200)); return null; }
 }

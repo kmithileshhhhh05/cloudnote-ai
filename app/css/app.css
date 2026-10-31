@@ -367,7 +367,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--indigo); }
 .nask-out:empty { display: none; } .nask-out { margin-bottom: 20px; }
 .ans-skel .skel { height: 90px; }
 .nans { display: grid; gap: 12px; }
-.nans-t { margin: 0; font-size: 1.08rem; line-height: 1.6; color: var(--text); }
+.nans-t { margin: 0; font-size: 1.08rem; line-height: 1.6; color: var(--text); white-space: pre-line; }
+.nbg { margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--line, #444); background: rgba(255,255,255,.03); border-radius: 8px; }
+.nbg-h { font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; opacity: .7; margin-bottom: 6px; }
+.nbg-t { margin: 0; line-height: 1.6; white-space: pre-line; }
 .nsrc { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .nsrc li { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
 .nsrc li a { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; } .nsrc li a:hover b { color: var(--cyan); }

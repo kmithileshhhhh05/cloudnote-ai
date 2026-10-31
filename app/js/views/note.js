@@ -1,7 +1,7 @@
 // Full-page notes reader for one video: outline, in-note search with highlighting, and an AI question box scoped to this video.
 import { h, icon, clear, toast, fmtTime, fmtDate } from "../ui.js";
 import { cover, skeleton } from "../art.js";
-import { copyText, downloadText, knowMore } from "./common.js";
+import { copyText, downloadText, knowMore, backgroundBlock } from "./common.js";
 
 const SECTIONS = [["points", "Key points"], ["actions", "Action items"], ["decisions", "Decisions"]];
 
@@ -39,7 +39,7 @@ export async function noteView({ view, api, id }) {
     try {
       const r = await api.post("/notes/ask", { q, video: video.id }); if (!alive) return; clear(answer);
       const src = r.results.map((x) => h("li", null, h("a", { href: `#/v/${x.videoId}` + (x.start != null ? `?t=${Math.floor(x.start)}` : "") }, h("span", { class: "pill dim" }, x.label), x.start != null ? [" ", h("span", { class: "ts" }, fmtTime(x.start))] : null), h("p", null, x.text)));
-      answer.append(h("section", { class: "panel nans" }, h("div", { class: "panel-h" }, h("h2", null, r.answer ? "Answer" : r.results.length ? (r.source === "ai" ? "No direct answer, closest notes" : "Matching notes") : "No match"), h("span", { class: "pill " + (r.answer ? "cyan" : "dim") }, r.answer ? "AI, from these notes" : r.source === "ai" ? "AI found no answer" : "keyword search")), r.answer ? h("p", { class: "nans-t" }, r.answer) : (r.results.length ? null : h("p", { class: "nans-t" }, "Nothing in these notes matches that question.")), src.length ? h("ul", { class: "nsrc" }, ...src) : null, r.answer ? null : knowMore({ topic: q, label: "Not in these notes? Know more about this topic" })));
+      answer.append(h("section", { class: "panel nans" }, h("div", { class: "panel-h" }, h("h2", null, r.answer ? "Answer" : r.results.length ? (r.source === "ai" ? "No direct answer, closest notes" : "Matching notes") : "No match"), h("span", { class: "pill " + (r.answer ? "cyan" : "dim") }, r.answer ? "AI, from these notes" : r.source === "ai" ? "AI found no answer" : "keyword search")), r.answer ? h("p", { class: "nans-t" }, r.answer) : (r.results.length ? null : h("p", { class: "nans-t" }, "Nothing in these notes matches that question.")), backgroundBlock(r.background), src.length ? h("ul", { class: "nsrc" }, ...src) : null, r.answer || r.background ? null : knowMore({ topic: q, label: "Not in these notes? Know more about this topic" })));
     } catch (e) { clear(answer); toast(e.message, "err"); }
     askBtn.disabled = false; askBtn.textContent = "Ask";
   }

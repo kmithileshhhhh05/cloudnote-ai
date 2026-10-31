@@ -97,10 +97,10 @@ async function route(ctx, req) {
     const pool = all.slice(0, 10).map((h) => ({ ...excerptOf(h.chunk, vmap), text: String(h.chunk.text || "").slice(0, 700), score: h.score, mode: h.mode }));
     const ans = await answerFromMoments(q, pool, ctx.llm);
     const results = hits.map((h) => ({ ...excerptOf(h.chunk, vmap), score: h.score, mode: h.mode }));
-    if (!ans) return { query: q, answer: null, results };
+    if (!ans || !ans.text) return { query: q, answer: null, background: ans ? ans.background : null, results };
     const cited = ans.cites.map((c) => ({ ...c, text: c.text.length > 260 ? c.text.slice(0, 259) + "\u2026" : c.text }));
     const seen = new Set(cited.map((c) => c.chunkId));
-    return { query: q, answer: ans.text, results: cited.concat(results.filter((r) => !seen.has(r.chunkId))).slice(0, 6) };
+    return { query: q, answer: ans.text, background: ans.background || null, results: cited.concat(results.filter((r) => !seen.has(r.chunkId))).slice(0, 6) };
   }
 
   // ----- references -----

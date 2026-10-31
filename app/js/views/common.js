@@ -59,11 +59,18 @@ export function knowMore({ topic = "", chunkId = "", label = "Know more about th
   return h("div", { class: "km" }, btn, out);
 }
 
+/** General explanation that is not from the user's material; always labelled as such. */
+export function backgroundBlock(text) {
+  if (!text) return null;
+  return h("div", { class: "nbg" }, h("div", { class: "nbg-h" }, "General explanation (AI, not from your videos)"), h("p", { class: "nbg-t" }, text));
+}
+
 /** AI answer from transcript moments, shown above the moments it cites. */
 export function answerCard(r, opts = {}) {
-  if (!r || !r.answer) return null;
+  if (!r || (!r.answer && !r.background)) return null;
   return h("section", { class: "panel nans" },
-    h("div", { class: "panel-h" }, h("h2", null, "Answer"), h("span", { class: "pill cyan" }, "AI, from the video transcript")),
-    h("p", { class: "nans-t" }, r.answer),
-    h("p", { class: "hint" }, "Numbers in brackets point to the moments below. Click a timestamp to play it."));
+    h("div", { class: "panel-h" }, h("h2", null, r.answer ? "Answer" : "Not covered in your videos"), h("span", { class: "pill " + (r.answer ? "cyan" : "dim") }, r.answer ? "AI, from the video transcript" : "general explanation")),
+    r.answer ? h("p", { class: "nans-t" }, r.answer) : null,
+    backgroundBlock(r.background),
+    r.answer ? h("p", { class: "hint" }, "Numbers in brackets point to the moments below. Click a timestamp to play it.") : null);
 }
