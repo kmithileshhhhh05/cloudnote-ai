@@ -15,9 +15,10 @@ function ctx() {
     storage,
     transcribe: awsTranscribe({ bucket: e.MEDIA_BUCKET, storage }),
     worker: awsWorker({ functionName: e.WORKER_FUNCTION }),
-    // Bedrock first; Groq and then Gemini (if keys are set) take over when it fails, so Bedrock comes back on its own once it works.
+    // Bedrock first; OpenAI, Groq and then Gemini (if keys are set) take over when it fails, so Bedrock comes back on its own once it works.
     llm: chainLlm([
-      e.NOTES_MODEL_ID && e.NOTES_MODEL_ID !== "none" ? awsLlm({ modelId: e.NOTES_MODEL_ID, region: e.BEDROCK_REGION || undefined, maxAttempts: e.GROQ_API_KEY || e.GEMINI_API_KEY ? 1 : undefined }) : null,
+      e.NOTES_MODEL_ID && e.NOTES_MODEL_ID !== "none" ? awsLlm({ modelId: e.NOTES_MODEL_ID, region: e.BEDROCK_REGION || undefined, maxAttempts: e.OPENAI_API_KEY || e.GROQ_API_KEY || e.GEMINI_API_KEY ? 1 : undefined }) : null,
+      e.OPENAI_API_KEY ? openAiLlm({ apiKey: e.OPENAI_API_KEY, model: e.OPENAI_MODEL || "gpt-5.4-mini", baseUrl: "https://api.openai.com/v1", name: "OpenAI", reasoning: /^(gpt-5|o\d)/.test(e.OPENAI_MODEL || "gpt-5.4-mini"), budgetMs: Number(e.OPENAI_BUDGET_MS) || 12000 }) : null,
       e.GROQ_API_KEY ? openAiLlm({ apiKey: e.GROQ_API_KEY, model: e.GROQ_MODEL, budgetMs: Number(e.GROQ_BUDGET_MS) || 12000 }) : null,
       e.GEMINI_API_KEY ? geminiLlm({ apiKey: e.GEMINI_API_KEY, model: e.GEMINI_MODEL || undefined, budgetMs: Number(e.GEMINI_BUDGET_MS) || 12000 }) : null,
     ]),

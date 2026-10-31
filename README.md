@@ -22,11 +22,12 @@ Cloud-based intelligent video note extraction and semantic search platform. Uplo
 ## AI models
 The backend tries models in order and uses the first one that answers:
 1. **Amazon Bedrock** (Amazon Nova Lite), the intended model.
-2. **Groq** free tier (`openai/gpt-oss-120b`), if a Groq key is configured.
-3. **Google Gemini** free tier (`gemini-3.8-flash`), if a Gemini key is configured.
-4. Built-in extractive notes and keyword search, if none of them answers.
+2. **OpenAI** (`gpt-5.4-mini`), if an OpenAI key is configured.
+3. **Groq** free tier (`openai/gpt-oss-120b`), if a Groq key is configured.
+4. **Google Gemini** free tier (`gemini-3.8-flash`), if a Gemini key is configured.
+5. Built-in extractive notes and keyword search, if none of them answers.
 
-**Current live setup:** the AWS account is new, and Bedrock allows it 0 tokens per day for now, so notes and answers on the live site come from Groq, and search is keyword based. Bedrock takes over automatically once AWS raises the quota. When Groq or Gemini is used, transcript text is sent to that provider.
+**Current live setup:** the AWS account is new, and Bedrock allows it 0 tokens per day for now, so notes and answers on the live site come from OpenAI (Groq as backup), and search is keyword based. Bedrock takes over automatically once AWS raises the quota. When OpenAI, Groq or Gemini is used, transcript text is sent to that provider.
 
 ## Repository layout
 | Path | What |

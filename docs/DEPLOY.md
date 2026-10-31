@@ -3,7 +3,7 @@
 **Current deployment:** https://d349qer3boe6fg.cloudfront.net, stack `cloudnote-ai` in us-east-1. It was redeployed with:
 
     ALLOWED_EMAIL_DOMAINS="" BEDROCK_REGION=us-west-2 EMBED_MODEL_ID=none \
-    GROQ_API_KEY_FILE=~/.cloudnote/groq.key GEMINI_API_KEY_FILE=~/.cloudnote/gemini.key \
+    OPENAI_API_KEY_FILE=~/.cloudnote/openai.key GROQ_API_KEY_FILE=~/.cloudnote/groq.key GEMINI_API_KEY_FILE=~/.cloudnote/gemini.key \
     bash infra/deploy.sh us-east-1
 
 The key files are only needed when a key changes; otherwise the stack keeps the keys from the previous deploy.
@@ -43,7 +43,7 @@ Options (environment variables): `ALLOWED_EMAIL_DOMAINS` (for example `school.ed
 
 Other options: `NOTES_MODEL_ID` (default `amazon.nova-lite-v1:0`, or `none`), `EMBED_MODEL_ID` (default `amazon.titan-embed-text-v2:0`, or `none`), `MAX_VIDEOS` (default 30 per user), `MAX_MEDIA_MB` (default 500), `BEDROCK_REGION` (send Bedrock calls to another region, for example `us-west-2`).
 
-Free AI fallbacks (optional): `GROQ_API_KEY_FILE` and `GEMINI_API_KEY_FILE` point to files that hold a Groq or Gemini API key. They are passed as NoEcho CloudFormation parameters and end up as Lambda environment variables, so anyone with console access to the account can read them. Models: `GROQ_MODEL` (default `openai/gpt-oss-120b`) and `GEMINI_MODEL` (default `gemini-3.8-flash`). The order is Bedrock, then Groq, then Gemini, then extractive notes. With these providers, transcript text leaves AWS.
+AI fallbacks (optional): `OPENAI_API_KEY_FILE`, `GROQ_API_KEY_FILE` and `GEMINI_API_KEY_FILE` point to files that hold an OpenAI, Groq or Gemini API key. They are passed as NoEcho CloudFormation parameters and end up as Lambda environment variables, so anyone with console access to the account can read them. Models: `OPENAI_MODEL` (default `gpt-5.4-mini`), `GROQ_MODEL` (default `openai/gpt-oss-120b`) and `GEMINI_MODEL` (default `gemini-3.8-flash`). The order is Bedrock, then OpenAI, then Groq, then Gemini, then extractive notes. With these providers, transcript text leaves AWS.
 
 ## First checks after deploying
 1. Open the printed URL, create an account, and use **Try with sample videos** to confirm the app, API and database work without spending on transcription.

@@ -25,8 +25,10 @@ else echo "2/5 Artifacts bucket exists"; fi
 
 echo "3/5 Packaging and deploying the stack (takes a few minutes the first time)..."
 aws cloudformation package --template-file infra/template.yaml --s3-bucket "$ART" --output-template-file /tmp/cloudnote-packaged.yaml --region "$REGION" >/dev/null
-# Gemini/Groq keys: read from GEMINI_API_KEY_FILE / GROQ_API_KEY_FILE (never echoed). If not given, the stack keeps its previous key.
+# OpenAI/Groq/Gemini keys: read from OPENAI_API_KEY_FILE / GROQ_API_KEY_FILE / GEMINI_API_KEY_FILE (never echoed). If not given, the stack keeps its previous key.
 EXTRA=()
+if [ -n "${OPENAI_API_KEY_FILE:-}" ]; then EXTRA+=("OpenAiApiKey=$(tr -d '[:space:]' < "$OPENAI_API_KEY_FILE")"); fi
+[ -n "${OPENAI_MODEL:-}" ] && EXTRA+=("OpenAiModel=$OPENAI_MODEL")
 if [ -n "${GEMINI_API_KEY_FILE:-}" ]; then EXTRA+=("GeminiApiKey=$(tr -d '[:space:]' < "$GEMINI_API_KEY_FILE")"); fi
 [ -n "${GEMINI_MODEL:-}" ] && EXTRA+=("GeminiModel=$GEMINI_MODEL")
 if [ -n "${GROQ_API_KEY_FILE:-}" ]; then EXTRA+=("GroqApiKey=$(tr -d '[:space:]' < "$GROQ_API_KEY_FILE")"); fi

@@ -32,8 +32,9 @@ export function geminiLlm({ apiKey, model = "gemini-3.8-flash", budgetMs = 25000
   };
 }
 
-// Any OpenAI-compatible chat API (Groq free tier by default), same retry rules as Gemini.
-export function openAiLlm({ apiKey, model, baseUrl = "https://api.groq.com/openai/v1", name = "Groq", budgetMs = 25000, attemptMs = 40000, fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+// Any OpenAI-compatible chat API (Groq free tier by default, or OpenAI itself), same retry rules as Gemini.
+// OpenAI's reasoning models take max_completion_tokens and only the default temperature, hence `reasoning`.
+export function openAiLlm({ apiKey, model, baseUrl = "https://api.groq.com/openai/v1", name = "Groq", reasoning = false, budgetMs = 25000, attemptMs = 40000, fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   async function once(body, timeoutMs) {
     const r = await fetchFn(`${baseUrl}/chat/completions`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` }, body, signal: AbortSignal.timeout(timeoutMs) });
     const j = await r.json().catch(() => ({}));
@@ -44,7 +45,8 @@ export function openAiLlm({ apiKey, model, baseUrl = "https://api.groq.com/opena
   }
   return {
     async complete({ system, user }) {
-      const body = JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: 2500, temperature: 0.2 });
+      const messages = [{ role: "system", content: system }, { role: "user", content: user }];
+      const body = JSON.stringify(reasoning ? { model, messages, max_completion_tokens: 8000, reasoning_effort: "low" } : { model, messages, max_tokens: 2500, temperature: 0.2 });
       const end = Date.now() + budgetMs;
       for (let attempt = 0; ; attempt++) {
         const left = end - Date.now();

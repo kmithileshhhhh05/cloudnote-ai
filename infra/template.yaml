@@ -40,6 +40,16 @@ Parameters:
     Default: gemini-3.8-flash
     Description: Gemini model id used when GeminiApiKey is set.
 
+  OpenAiApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Optional OpenAI API key, tried right after Bedrock for notes and Q&A. Empty disables OpenAI.
+  OpenAiModel:
+    Type: String
+    Default: gpt-5.4-mini
+    Description: OpenAI model id used when OpenAiApiKey is set.
+
   GroqApiKey:
     Type: String
     Default: ""
@@ -161,6 +171,9 @@ Resources:
           GEMINI_API_KEY: !Ref GeminiApiKey
           GEMINI_MODEL: !Ref GeminiModel
           GEMINI_BUDGET_MS: "240000"
+          OPENAI_API_KEY: !Ref OpenAiApiKey
+          OPENAI_MODEL: !Ref OpenAiModel
+          OPENAI_BUDGET_MS: "120000"
           GROQ_API_KEY: !Ref GroqApiKey
           GROQ_MODEL: !Ref GroqModel
           GROQ_BUDGET_MS: "60000"
@@ -203,6 +216,9 @@ Resources:
           GEMINI_API_KEY: !Ref GeminiApiKey
           GEMINI_MODEL: !Ref GeminiModel
           GEMINI_BUDGET_MS: "12000"
+          OPENAI_API_KEY: !Ref OpenAiApiKey
+          OPENAI_MODEL: !Ref OpenAiModel
+          OPENAI_BUDGET_MS: "12000"
           GROQ_API_KEY: !Ref GroqApiKey
           GROQ_MODEL: !Ref GroqModel
           GROQ_BUDGET_MS: "12000"
