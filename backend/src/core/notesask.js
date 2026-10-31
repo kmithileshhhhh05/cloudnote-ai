@@ -57,3 +57,20 @@ export async function askNotes(question, items, llm) {
   }
   return { query: question, answer: null, source: "keyword", results: hits.slice(0, 6).map(pub) };
 }
+
+/** Answer a question from transcript moments (Ask tab / Ask page). Passages carry their timestamps; the
+ * model must cite them. Returns null on any failure so callers keep the plain moment list. */
+export async function answerFromMoments(question, moments, llm) {
+  if (!llm || !moments.length) return null;
+  const fmt = (s) => (s == null ? "" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`);
+  const ps = moments.map((m) => ({ ...m, label: fmt(m.start) || "moment" }));
+  try {
+    const reply = await llm.complete({
+      system: "You answer a student's question about recorded lectures using ONLY the numbered transcript excerpts. Explain clearly in 2 to 5 sentences, like a tutor, cleaning up spoken filler. After each claim cite the excerpt number in square brackets like [2]. If the excerpts do not contain the answer, reply exactly: NOT_IN_NOTES. Never invent facts or times.",
+      user: `Transcript excerpts:\n${ps.map((p, i) => `[${i + 1}] (${p.title}, ${p.label}) ${p.text}`).join("\n")}\n\nQuestion: ${question}\nAnswer:`,
+    });
+    const a = parseAnswer(reply, ps);
+    if (!a) return null;
+    return { text: a.text, cites: a.cites.map((n) => ps[n - 1]) };
+  } catch (e) { console.error("moment answer failed:", String((e && e.message) || e).slice(0, 200)); return null; }
+}

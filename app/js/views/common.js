@@ -58,3 +58,12 @@ export function knowMore({ topic = "", chunkId = "", label = "Know more about th
   }
   return h("div", { class: "km" }, btn, out);
 }
+
+/** AI answer from transcript moments, shown above the moments it cites. */
+export function answerCard(r, opts = {}) {
+  if (!r || !r.answer) return null;
+  return h("section", { class: "panel nans" },
+    h("div", { class: "panel-h" }, h("h2", null, "Answer"), h("span", { class: "pill cyan" }, "AI, from the video transcript")),
+    h("p", { class: "nans-t" }, r.answer),
+    h("p", { class: "hint" }, "Numbers in brackets point to the moments below. Click a timestamp to play it."));
+}

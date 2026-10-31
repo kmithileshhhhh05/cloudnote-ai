@@ -1,5 +1,5 @@
 import { h, icon, clear, toast, fmtTime, fmtDuration, debounce, confirmDialog, promptDialog } from "../ui.js";
-import { statusChip, momentLink, momentCard, highlight, copyText, downloadText, knowMore } from "./common.js";
+import { statusChip, momentLink, momentCard, highlight, copyText, downloadText, knowMore, answerCard } from "./common.js";
 
 const stripBullet = (l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim();
 
@@ -153,16 +153,17 @@ export async function videoView({ view, api, app, id, q, go, refreshNotifs }) {
     function setScope(s, e) { scope = s; [...seg.children].forEach((b) => b.setAttribute("aria-selected", String(b === e.currentTarget))); }
     async function run() {
       const t = input.value.trim(); if (!t) { input.focus(); return; }
-      clear(out); out.append(h("div", { class: "hint" }, "Searching..."));
+      clear(out); out.append(h("div", { class: "hint" }, "Thinking..."));
       try {
         const r = await api.get("/search", scope === "video" ? { q: t, video: id } : { q: t });
         clear(out);
-        if (!r.results.length) out.append(h("div", { class: "nomatch" }, h("b", null, "Nothing close enough. "), "Try other words."));
-        else r.results.forEach((x) => out.append(momentCard(x, { currentId: id, onSeek: seek })));
+        if (r.answer) { out.append(answerCard(r)); out.append(h("div", { class: "hint", style: { margin: "10px 0 6px" } }, "Moments")); }
+        if (!r.results.length) out.append(h("div", { class: "nomatch" }, h("b", null, "Nothing close enough. "), "Try other words."), knowMore({ topic: t }));
+        else { r.results.forEach((x) => out.append(momentCard(x, { currentId: id, onSeek: seek }))); if (!r.answer) out.append(knowMore({ topic: t, label: "No direct answer here? Know more about this topic" })); }
       } catch (e) { clear(out); toast(e.message, "err"); }
     }
-    return h("div", { class: "tabpanel", role: "tabpanel" }, h("div", { class: "pnl-h" }, h("div", null, h("h3", null, "Ask"), h("p", null, "Search by meaning. You get moments you can play, not a made-up answer."))), seg,
-      h("form", { class: "askbar", onsubmit: (e) => { e.preventDefault(); run(); } }, input, h("button", { class: "btn btn-primary btn-sm", type: "submit" }, "Find")), out);
+    return h("div", { class: "tabpanel", role: "tabpanel" }, h("div", { class: "pnl-h" }, h("div", null, h("h3", null, "Ask"), h("p", null, "Ask a question. You get an answer taken from the transcript, plus the moments it comes from."))), seg,
+      h("form", { class: "askbar", onsubmit: (e) => { e.preventDefault(); run(); } }, input, h("button", { class: "btn btn-primary btn-sm", type: "submit" }, "Ask")), out);
   }
 
   // ---------- context (references) ----------

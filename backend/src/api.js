@@ -4,7 +4,7 @@ import { store, newId, ID_RE, REF_RE, CHUNK_RE, notifId } from "./store.js";
 import { parseOrThrow, saveTranscript, seedSamples } from "./pipeline.js";
 import { candidatesFor, buildMap, b64ToVec } from "./core/library.js";
 import { compareNotes } from "../../shared/nlp.js";
-import { askNotes } from "./core/notesask.js";
+import { askNotes, answerFromMoments } from "./core/notesask.js";
 import { explainTopic } from "./core/explain.js";
 
 const trunc = (s, n = 220) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "..." : s);
@@ -91,8 +91,16 @@ async function route(ctx, req) {
     if (only === null) throw bad("Bad video id.");
     const lib = await S.library();
     const vmap = new Map((await S.listVideos()).map((v) => [v.id, v]));
-    const hits = lib.search(q, { purpose: "ask", k: 6, onlyVideo: only, queryVec: await embedQuery(ctx, q) }).filter((h) => h.passes).slice(0, 5);
-    return { query: q, results: hits.map((h) => ({ ...excerptOf(h.chunk, vmap), score: h.score, mode: h.mode })) };
+    const all = lib.search(q, { purpose: "ask", k: 12, onlyVideo: only, queryVec: await embedQuery(ctx, q) });
+    const hits = all.filter((h) => h.passes).slice(0, 5);
+    // AI answer grounded in the closest moments (also weaker ones: a question like "what is DFS" rarely shares many words)
+    const pool = all.slice(0, 10).map((h) => ({ ...excerptOf(h.chunk, vmap), text: String(h.chunk.text || "").slice(0, 700), score: h.score, mode: h.mode }));
+    const ans = await answerFromMoments(q, pool, ctx.llm);
+    const results = hits.map((h) => ({ ...excerptOf(h.chunk, vmap), score: h.score, mode: h.mode }));
+    if (!ans) return { query: q, answer: null, results };
+    const cited = ans.cites.map((c) => ({ ...c, text: c.text.length > 260 ? c.text.slice(0, 259) + "\u2026" : c.text }));
+    const seen = new Set(cited.map((c) => c.chunkId));
+    return { query: q, answer: ans.text, results: cited.concat(results.filter((r) => !seen.has(r.chunkId))).slice(0, 6) };
   }
 
   // ----- references -----
